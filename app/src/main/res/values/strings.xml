@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Projecto final</string>
+    <!-- Este string será reemplazado automáticamente por el sistema de build de Firebase -->
+    <string name="default_web_client_id" translatable="false">YOUR_WEB_CLIENT_ID</string>
+</resources>

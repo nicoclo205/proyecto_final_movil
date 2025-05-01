@@ -114,7 +114,7 @@ class InventoryActivity : AppCompatActivity() {
                 getContent.launch(intent)
             }
             
-            // manejo de la agregación de productos
+            // manejo agregación  productos
             btnAddProduct.setOnClickListener {
                 val name = etProductName.text.toString().trim()
                 val quantityStr = etQuantity.text.toString().trim()

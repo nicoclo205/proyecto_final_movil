@@ -7,4 +7,5 @@
     <color name="myGray">#E5E4E2</color>
     <color name="myDarkGray">#708090</color>
     <color name="myPink">#F2AFEF</color>
+    <color name="myHintColor">#AAAAAA</color>
 </resources>

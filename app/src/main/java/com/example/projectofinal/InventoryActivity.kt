@@ -85,6 +85,13 @@ class InventoryActivity : AppCompatActivity() {
         recyclerProducts = findViewById(R.id.recyclerProducts)
         textEmptyProducts = findViewById(R.id.textEmptyProducts)
         
+        // Setup navigation buttons if they exist
+        val orderButton = findViewById<ImageButton>(R.id.orderButton)
+        orderButton?.setOnClickListener {
+            startActivity(Intent(this, OrderActivity::class.java))
+            finish()
+        }
+        
         // Setup RecyclerView
         setupRecyclerView()
         
@@ -231,7 +238,7 @@ class InventoryActivity : AppCompatActivity() {
                 selectedImageUri = null
                 currentImageButton = null  // Limpiar la referencia al botón
                 dialog.dismiss()
-                // Products will be refreshed automatically by the ValueEventListener
+
             }
             .addOnFailureListener { e ->
                 Toast.makeText(this, "Error al agregar producto: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -345,6 +352,10 @@ class InventoryActivity : AppCompatActivity() {
         }
         
         dialog.show()
+        // Configurar ancho del diálogo
+        dialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        // Configurar ancho del diálogo
+        dialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
     }
     
     private fun updateProductWithImage(productId: String, name: String, quantity: Int, price: Double, dialog: AlertDialog) {

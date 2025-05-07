@@ -257,8 +257,8 @@ class InventoryActivity : AppCompatActivity() {
         val etProductName = dialogLayout.findViewById<EditText>(R.id.etEditProduct)
         val etQuantity = dialogLayout.findViewById<EditText>(R.id.etEditNum)
         val etPrice = dialogLayout.findViewById<EditText>(R.id.etEditPrice)
-        val btnUpdateProduct = dialogLayout.findViewById<ImageButton>(R.id.editButton)  // Cambio a ImageButton
-        val btnDeleteProduct = dialogLayout.findViewById<ImageButton>(R.id.deleteButton)  // Cambio a ImageButton
+        val btnUpdateProduct = dialogLayout.findViewById<Button>(R.id.editButton)  // Cambio a ImageButton
+        val btnDeleteProduct = dialogLayout.findViewById<Button>(R.id.deleteButton)  // Cambio a ImageButton
         val btnClose = dialogLayout.findViewById<Button>(R.id.cancelButton)
         
         // Fill the form with product data

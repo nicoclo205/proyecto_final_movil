@@ -14,6 +14,13 @@ import java.util.Locale
 class OrderProductAdapter(private var orderProducts: MutableList<OrderProduct>) :
     RecyclerView.Adapter<OrderProductAdapter.OrderProductViewHolder>() {
 
+    private var readOnlyMode = false
+    
+    fun setReadOnlyMode(readOnly: Boolean) {
+        this.readOnlyMode = readOnly
+        notifyDataSetChanged()
+    }
+
     interface OnOrderProductClickListener {
         fun onRemoveProductClick(orderProduct: OrderProduct, position: Int)
     }
@@ -63,6 +70,9 @@ class OrderProductAdapter(private var orderProducts: MutableList<OrderProduct>) 
         // Set subtotal
         val subtotal = orderProduct.getSubtotal()
         holder.tvSubtotal.text = "Subtotal: ${format.format(subtotal)}"
+        
+        // Hide remove button in read-only mode
+        holder.btnRemoveProduct.visibility = if (readOnlyMode) View.GONE else View.VISIBLE
     }
 
     override fun getItemCount(): Int = orderProducts.size

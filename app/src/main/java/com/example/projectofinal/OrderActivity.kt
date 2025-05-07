@@ -116,6 +116,9 @@ class OrderActivity : AppCompatActivity() {
                     order?.let { ordersList.add(it) }
                 }
                 
+                // Ordenar por fecha descendente (más recientes primero)
+                ordersList.sortByDescending { it.orderDate }
+                
                 // Update adapter
                 orderAdapter.updateOrders(ordersList)
                 
@@ -437,8 +440,219 @@ class OrderActivity : AppCompatActivity() {
     }
     
     private fun showOrderDetailsDialog(order: Order) {
-        // You can implement this to show order details when an order is clicked
-        Toast.makeText(this, "Pedido de ${order.customerName}", Toast.LENGTH_SHORT).show()
+        val builder = AlertDialog.Builder(this, R.style.RoundedCornerDialog)
+        
+        val inflater = layoutInflater
+        val dialogLayout = inflater.inflate(R.layout.dialog_order_details, null)
+        builder.setView(dialogLayout)
+        
+        val dialog = builder.create()
+        
+        // Initialize views
+        val tvCustomerName = dialogLayout.findViewById<TextView>(R.id.tvCustomerName)
+        val tvPhone = dialogLayout.findViewById<TextView>(R.id.tvPhone)
+        val tvAddress = dialogLayout.findViewById<TextView>(R.id.tvAddress)
+        val tvOrderDate = dialogLayout.findViewById<TextView>(R.id.tvOrderDate)
+        val tvStatus = dialogLayout.findViewById<TextView>(R.id.tvStatus)
+        val recyclerOrderProducts = dialogLayout.findViewById<RecyclerView>(R.id.recyclerOrderProducts)
+        val tvTotalAmount = dialogLayout.findViewById<TextView>(R.id.tvTotalAmount)
+        val btnClose = dialogLayout.findViewById<ImageButton>(R.id.btnClose)
+        val btnEdit = dialogLayout.findViewById<Button>(R.id.btnEdit)
+        val btnDelete = dialogLayout.findViewById<Button>(R.id.btnDelete)
+        
+        // Set order details
+        tvCustomerName.text = "Cliente: ${order.customerName}"
+        tvPhone.text = "Teléfono: ${order.phone}"
+        tvAddress.text = "Dirección: ${order.address}"
+        
+        // Format and set date
+        val dateFormat = java.text.SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+        val orderDate = Date(order.orderDate)
+        tvOrderDate.text = "Fecha: ${dateFormat.format(orderDate)}"
+        
+        tvStatus.text = "Estado: ${order.status}"
+        
+        // Setup RecyclerView for order products (read-only mode)
+        val orderProductAdapter = OrderProductAdapter(order.products.toMutableList())
+        // Disable remove button for details view
+        orderProductAdapter.setReadOnlyMode(true)
+        
+        recyclerOrderProducts.layoutManager = LinearLayoutManager(this)
+        recyclerOrderProducts.adapter = orderProductAdapter
+        
+        // Set total amount
+        val format = NumberFormat.getCurrencyInstance(Locale("es", "MX"))
+        tvTotalAmount.text = "Total: ${format.format(order.totalAmount)}"
+        
+        // Close button
+        btnClose.setOnClickListener {
+            dialog.dismiss()
+        }
+        
+        // Edit button
+        btnEdit.setOnClickListener {
+            dialog.dismiss()
+            showEditOrderDialog(order)
+        }
+        
+        // Delete button
+        btnDelete.setOnClickListener {
+            confirmDeleteOrder(order, dialog)
+        }
+        
+        dialog.show()
+        // Set dialog width
+        dialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+    }
+    
+    private fun showEditOrderDialog(order: Order) {
+        val builder = AlertDialog.Builder(this, R.style.RoundedCornerDialog)
+        
+        val inflater = layoutInflater
+        val dialogLayout = inflater.inflate(R.layout.dialog_edit_order, null)
+        builder.setView(dialogLayout)
+        
+        val dialog = builder.create()
+        
+        val etCustomerName = dialogLayout.findViewById<EditText>(R.id.etCustomerName)
+        val etPhone = dialogLayout.findViewById<EditText>(R.id.etPhone)
+        val etAddress = dialogLayout.findViewById<EditText>(R.id.etAddress)
+        val spinnerStatus = dialogLayout.findViewById<Spinner>(R.id.spinnerStatus)
+        val recyclerOrderProducts = dialogLayout.findViewById<RecyclerView>(R.id.recyclerOrderProducts)
+        val btnAddProduct = dialogLayout.findViewById<Button>(R.id.btnAddProduct)
+        val tvTotalAmount = dialogLayout.findViewById<TextView>(R.id.tvTotalAmount)
+        val btnClose = dialogLayout.findViewById<ImageButton>(R.id.btnClose)
+        val btnSaveOrder = dialogLayout.findViewById<Button>(R.id.btnSaveOrder)
+        
+        // Populate form with order data
+        etCustomerName.setText(order.customerName)
+        etPhone.setText(order.phone)
+        etAddress.setText(order.address)
+        
+        // Setup status spinner
+        val statusOptions = arrayOf("Pendiente", "En Proceso", "Completado", "Cancelado")
+        val statusAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, statusOptions)
+        statusAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinnerStatus.adapter = statusAdapter
+        
+        // Set current status
+        val statusPosition = statusOptions.indexOf(order.status)
+        if (statusPosition >= 0) {
+            spinnerStatus.setSelection(statusPosition)
+        }
+        
+        // Setup RecyclerView for order products
+        val orderProductsList = order.products.toMutableList()
+        val orderProductAdapter = OrderProductAdapter(orderProductsList)
+        recyclerOrderProducts.layoutManager = LinearLayoutManager(this)
+        recyclerOrderProducts.adapter = orderProductAdapter
+        
+        // Set total amount
+        val format = NumberFormat.getCurrencyInstance(Locale("es", "MX"))
+        tvTotalAmount.text = "Total: ${format.format(order.totalAmount)}"
+        
+        // Handle removing products from the order
+        orderProductAdapter.setOnOrderProductClickListener(object : OrderProductAdapter.OnOrderProductClickListener {
+            override fun onRemoveProductClick(orderProduct: OrderProduct, position: Int) {
+                orderProductAdapter.removeProduct(position)
+                // Update total amount
+                val totalAmount = orderProductAdapter.calculateTotal()
+                tvTotalAmount.text = "Total: ${format.format(totalAmount)}"
+            }
+        })
+        
+        // Add product to order
+        btnAddProduct.setOnClickListener {
+            if (productsList.isEmpty()) {
+                Toast.makeText(this, "No hay productos disponibles", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            
+            showSelectProductDialog(orderProductAdapter, tvTotalAmount)
+        }
+        
+        // Close button
+        btnClose.setOnClickListener {
+            dialog.dismiss()
+        }
+        
+        // Save order
+        btnSaveOrder.setOnClickListener {
+            val customerName = etCustomerName.text.toString().trim()
+            val phone = etPhone.text.toString().trim()
+            val address = etAddress.text.toString().trim()
+            val status = statusOptions[spinnerStatus.selectedItemPosition]
+            
+            // Validate inputs
+            if (customerName.isEmpty()) {
+                Toast.makeText(this, "Ingrese el nombre del cliente", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            
+            if (phone.isEmpty()) {
+                Toast.makeText(this, "Ingrese el teléfono", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            
+            if (address.isEmpty()) {
+                Toast.makeText(this, "Ingrese la dirección de entrega", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            
+            if (orderProductAdapter.getOrderProducts().isEmpty()) {
+                Toast.makeText(this, "Agregue al menos un producto", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            
+            // Update the order
+            val totalAmount = orderProductAdapter.calculateTotal()
+            
+            val updatedOrder = Order(
+                id = order.id,
+                customerName = customerName,
+                phone = phone,
+                address = address,
+                products = orderProductAdapter.getOrderProducts(),
+                totalAmount = totalAmount,
+                orderDate = order.orderDate,
+                status = status
+            )
+            
+            database.child("orders").child(order.id).setValue(updatedOrder)
+                .addOnSuccessListener {
+                    Toast.makeText(this, "Pedido actualizado exitosamente", Toast.LENGTH_SHORT).show()
+                    dialog.dismiss()
+                }
+                .addOnFailureListener { e ->
+                    Toast.makeText(this, "Error al actualizar pedido: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+        }
+        
+        dialog.show()
+        // Set dialog width
+        dialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+    }
+    
+    private fun confirmDeleteOrder(order: Order, parentDialog: AlertDialog) {
+        AlertDialog.Builder(this)
+            .setTitle("Eliminar pedido")
+            .setMessage("¿Está seguro que desea eliminar este pedido? Esta acción no se puede deshacer.")
+            .setPositiveButton("Eliminar") { _, _ ->
+                deleteOrder(order)
+                parentDialog.dismiss()
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+    
+    private fun deleteOrder(order: Order) {
+        database.child("orders").child(order.id).removeValue()
+            .addOnSuccessListener {
+                Toast.makeText(this, "Pedido eliminado exitosamente", Toast.LENGTH_SHORT).show()
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "Error al eliminar pedido: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
     }
     
     private fun updateInventoryQuantities(orderProducts: List<OrderProduct>) {

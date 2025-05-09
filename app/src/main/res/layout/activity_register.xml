@@ -66,90 +66,127 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
-            <EditText
-                android:id="@+id/editTextEmail"
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/textInputEmailLayout"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="32dp"
                 android:layout_marginTop="24dp"
                 android:layout_marginEnd="32dp"
-                android:background="@drawable/rounded_edittext"
-                android:hint="Correo electrónico"
-                android:inputType="textEmailAddress"
-                android:padding="16dp"
-                android:textColorHint="@color/myHintColor"
-                android:textColor="@color/black"
-                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/textViewRegisterSubtitle"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/textViewRegisterSubtitle" />
+                app:layout_constraintEnd_toEndOf="parent">
 
-            <EditText
-                android:id="@+id/editTextName"
+                <EditText
+                    android:id="@+id/editTextEmail"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Correo electrónico"
+                    android:inputType="textEmailAddress"
+                    android:padding="16dp"
+                    android:background="@drawable/rounded_edittext"
+                    android:textColorHint="@color/myHintColor"
+                    android:textColor="@color/black"
+                    android:importantForAutofill="no" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/textInputNameLayout"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="32dp"
                 android:layout_marginTop="16dp"
                 android:layout_marginEnd="32dp"
-                android:background="@drawable/rounded_edittext"
-                android:hint="Nombre"
-                android:inputType="textPersonName"
-                android:padding="16dp"
-                android:textColorHint="@color/myHintColor"
-                android:textColor="@color/black"
-                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/textInputEmailLayout"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/editTextEmail" />
+                app:layout_constraintEnd_toEndOf="parent">
 
-            <EditText
-                android:id="@+id/editTextLastName"
+                <EditText
+                    android:id="@+id/editTextName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Nombre"
+                    android:inputType="textPersonName"
+                    android:padding="16dp"
+                    android:background="@drawable/rounded_edittext"
+                    android:textColorHint="@color/myHintColor"
+                    android:textColor="@color/black"
+                    android:importantForAutofill="no" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/textInputLastNameLayout"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="32dp"
                 android:layout_marginTop="16dp"
                 android:layout_marginEnd="32dp"
-                android:background="@drawable/rounded_edittext"
-                android:hint="Apellido"
-                android:inputType="textPersonName"
-                android:padding="16dp"
-                android:textColorHint="@color/myHintColor"
-                android:textColor="@color/black"
-                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/textInputNameLayout"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/editTextName" />
+                app:layout_constraintEnd_toEndOf="parent">
 
-            <EditText
-                android:id="@+id/editTextUsername"
+                <EditText
+                    android:id="@+id/editTextLastName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Apellido"
+                    android:inputType="textPersonName"
+                    android:padding="16dp"
+                    android:background="@drawable/rounded_edittext"
+                    android:textColorHint="@color/myHintColor"
+                    android:textColor="@color/black"
+                    android:importantForAutofill="no" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/textInputUsernameLayout"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="32dp"
                 android:layout_marginTop="16dp"
                 android:layout_marginEnd="32dp"
-                android:background="@drawable/rounded_edittext"
-                android:hint="Usuario (¿Como le dicen?)"
-                android:inputType="text"
-                android:padding="16dp"
-                android:textColorHint="@color/myHintColor"
-                android:textColor="@color/black"
-                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/textInputLastNameLayout"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/editTextLastName" />
+                app:layout_constraintEnd_toEndOf="parent">
 
-            <EditText
-                android:id="@+id/editTextPassword"
+                <EditText
+                    android:id="@+id/editTextUsername"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Usuario (¿Como le dicen?)"
+                    android:inputType="text"
+                    android:padding="16dp"
+                    android:background="@drawable/rounded_edittext"
+                    android:textColorHint="@color/myHintColor"
+                    android:textColor="@color/black"
+                    android:importantForAutofill="no" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/textInputPasswordLayout"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="32dp"
                 android:layout_marginTop="16dp"
                 android:layout_marginEnd="32dp"
-                android:background="@drawable/rounded_edittext"
-                android:hint="Contraseña"
-                android:inputType="textPassword"
-                android:padding="16dp"
-                android:textColorHint="@color/myHintColor"
-                android:textColor="@color/black"
-                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/textInputUsernameLayout"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/editTextUsername" />
+                app:layout_constraintEnd_toEndOf="parent"
+                app:passwordToggleEnabled="true">
+
+                <EditText
+                    android:id="@+id/editTextPassword"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Contraseña"
+                    android:inputType="textPassword"
+                    android:padding="16dp"
+                    android:background="@drawable/rounded_edittext"
+                    android:textColorHint="@color/myHintColor"
+                    android:textColor="@color/black"
+                    android:importantForAutofill="no" />
+            </com.google.android.material.textfield.TextInputLayout>
+
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/buttonRegister"
@@ -166,7 +203,7 @@
                 android:textSize="16sp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/editTextPassword" />
+                app:layout_constraintTop_toBottomOf="@+id/textInputPasswordLayout" />
 
             <LinearLayout
                 android:id="@+id/linearLayoutDivider"

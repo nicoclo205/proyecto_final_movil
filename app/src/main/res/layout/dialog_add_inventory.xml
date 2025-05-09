@@ -49,59 +49,77 @@
         android:background="@drawable/show_inventory_image"
        />
 
-    <EditText
-        android:id="@+id/etAddProduct"
-        android:layout_width="0dp"
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/etAddProductView"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@drawable/rounded_edittext"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginTop="24dp"
-        android:hint="Nombre del producto"
-        android:inputType="text"
-        android:padding="16dp"
-        android:textColorHint="@color/myHintColor"
-        android:textColor="@color/black"
+        android:layout_marginTop="48dp"
         app:layout_constraintTop_toBottomOf="@id/addImage"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        />
+        app:layout_constraintEnd_toEndOf="parent">
 
-    <EditText
-        android:id="@+id/etAddNum"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:background="@drawable/rounded_edittext"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginTop="16dp"
-        android:hint="¿Cuántas unidades?"
-        android:inputType="number"
-        android:padding="16dp"
-        android:textColorHint="@color/myHintColor"
-        android:textColor="@color/black"
-        app:layout_constraintTop_toBottomOf="@id/etAddProduct"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        />
+        <EditText
+            android:id="@+id/etAddProduct"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Nombre del producto"
+            android:inputType="text"
+            android:maxLines="1"
+            android:padding="12dp"
+            android:textColorHint="@color/myHintColor"
+            android:importantForAutofill="no"
+            android:background="@drawable/rounded_edittext"/>
 
-    <EditText
-        android:id="@+id/etAddPrice"
-        android:layout_width="0dp"
+    </com.google.android.material.textfield.TextInputLayout>
+
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/etAddNumView"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@drawable/rounded_edittext"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginTop="16dp"
-        android:hint="Precio de cada unidad"
-        android:inputType="number"
-        android:padding="16dp"
-        android:textColorHint="@color/myHintColor"
-        android:textColor="@color/black"
-        app:layout_constraintTop_toBottomOf="@id/etAddNum"
+        android:layout_marginTop="8dp"
+        app:layout_constraintTop_toBottomOf="@id/etAddProductView"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        />
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <EditText
+            android:id="@+id/etAddNum"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="¿Cuántas unidades?"
+            android:inputType="number"
+            android:maxLines="1"
+            android:padding="12dp"
+            android:textColorHint="@color/myHintColor"
+            android:importantForAutofill="no"
+            android:background="@drawable/rounded_edittext"/>
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/etAddPriceView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        app:layout_constraintTop_toBottomOf="@id/etAddNumView"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <EditText
+            android:id="@+id/etAddPrice"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Precio de cada unidad"
+            android:inputType="number"
+            android:maxLines="1"
+            android:padding="12dp"
+            android:textColorHint="@color/myHintColor"
+            android:importantForAutofill="no"
+            android:background="@drawable/rounded_edittext"/>
+
+    </com.google.android.material.textfield.TextInputLayout>
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/buttonAddProduct"
@@ -119,7 +137,7 @@
         android:textSize="16sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/etAddPrice"
+        app:layout_constraintTop_toBottomOf="@+id/etAddPriceView"
         app:layout_constraintBottom_toBottomOf="parent"
         />
 

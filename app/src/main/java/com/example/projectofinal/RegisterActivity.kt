@@ -5,9 +5,11 @@ import android.content.Intent
 import android.net.ConnectivityManager
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
@@ -40,6 +42,8 @@ class RegisterActivity : AppCompatActivity() {
     private lateinit var database: FirebaseDatabase
     private lateinit var googleApiClient: GoogleApiClient
     private lateinit var googleSignInLauncher: ActivityResultLauncher<Intent>
+    private lateinit var progressBar: ProgressBar
+    private lateinit var loadingBackground: View
     
     companion object {
         private const val TAG = "RegisterActivity"
@@ -103,6 +107,12 @@ class RegisterActivity : AppCompatActivity() {
             buttonGoogleRegister = findViewById(R.id.buttonGoogleRegister)
             buttonBack = findViewById(R.id.buttonBack)
             textViewLogin = findViewById(R.id.textViewLogin)
+
+            progressBar = findViewById(R.id.progressBar)
+            loadingBackground = findViewById(R.id.loadingBackground)
+
+            progressBar.visibility = View.GONE
+            loadingBackground.visibility = View.GONE
             
             // Set click listeners
             buttonRegister.setOnClickListener {
@@ -148,6 +158,31 @@ class RegisterActivity : AppCompatActivity() {
             ).show()
         }
     }
+
+    private fun showLoading (isLoading: Boolean){
+        if (isLoading){
+
+            progressBar.visibility = View.VISIBLE
+            loadingBackground.visibility = View.VISIBLE
+
+            buttonRegister.isEnabled = false
+            buttonGoogleRegister.isEnabled = false
+            textViewLogin.isEnabled = false
+            buttonBack.isEnabled = false
+
+        }else{
+
+            progressBar.visibility = View.GONE
+            loadingBackground.visibility = View.GONE
+
+            buttonRegister.isEnabled = true
+            buttonGoogleRegister.isEnabled = true
+            textViewLogin.isEnabled = true
+            buttonBack.isEnabled = true
+
+        }
+
+    }
     
     override fun onStart() {
         super.onStart()
@@ -170,6 +205,7 @@ class RegisterActivity : AppCompatActivity() {
     private fun signInWithGoogle() {
         try {
             // Mostrar mensaje de carga
+            showLoading(true)
             Toast.makeText(this, "Iniciando registro con Google...", Toast.LENGTH_SHORT).show()
             
             if (!googleApiClient.isConnected) {
@@ -185,6 +221,8 @@ class RegisterActivity : AppCompatActivity() {
                 "Error al iniciar el proceso de registro con Google: ${e.message}",
                 Toast.LENGTH_LONG
             ).show()
+
+            showLoading(false)
         }
     }
     
@@ -216,7 +254,10 @@ class RegisterActivity : AppCompatActivity() {
                                 .addOnSuccessListener {
                                     Log.d(TAG, "signInWithCredential:success")
                                     Toast.makeText(this, "Registro con Google exitoso", Toast.LENGTH_SHORT).show()
-                                    val intent = Intent(this, MainActivity::class.java)
+
+                                    showLoading(false)
+
+                                    val intent = Intent(this, InventoryActivity::class.java)
                                     intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                                     startActivity(intent)
                                     finish()
@@ -228,6 +269,9 @@ class RegisterActivity : AppCompatActivity() {
                                         "Error al guardar datos: ${e.message}",
                                         Toast.LENGTH_LONG
                                     ).show()
+
+                                    showLoading(false)
+
                                 }
                         }
                     } else {
@@ -247,6 +291,9 @@ class RegisterActivity : AppCompatActivity() {
                             errorMessage,
                             Toast.LENGTH_LONG
                         ).show()
+
+                        showLoading(false)
+
                     }
                 }
         } catch (e: Exception) {
@@ -261,6 +308,7 @@ class RegisterActivity : AppCompatActivity() {
     
     private fun registerUser() {
         try {
+
             // Obtener y validar campos
             val email = editTextEmail.text.toString().trim()
             val name = editTextName.text.toString().trim()
@@ -312,6 +360,9 @@ class RegisterActivity : AppCompatActivity() {
             }
             
             // Mostrar mensaje de carga
+
+            showLoading(true)
+
             Toast.makeText(
                 this,
                 "Procesando registro...",
@@ -344,6 +395,8 @@ class RegisterActivity : AppCompatActivity() {
                                                 "Registro exitoso",
                                                 Toast.LENGTH_SHORT
                                             ).show()
+
+                                            showLoading(false)
                                             
                                             // Navigate to main activity
                                             val intent = Intent(this, LoginActivity::class.java)
@@ -358,6 +411,9 @@ class RegisterActivity : AppCompatActivity() {
                                                 "Error al guardar datos: ${e.message}",
                                                 Toast.LENGTH_LONG
                                             ).show()
+
+                                            showLoading(false)
+
                                         }
                                 } else {
                                     Log.e(TAG, "Error al obtener token: ${tokenTask.exception}")
@@ -366,6 +422,9 @@ class RegisterActivity : AppCompatActivity() {
                                         "Error de autenticación: No se pudo completar el registro",
                                         Toast.LENGTH_LONG
                                     ).show()
+
+                                    showLoading(false)
+
                                 }
                             }
                         }
@@ -387,6 +446,9 @@ class RegisterActivity : AppCompatActivity() {
                             errorMessage,
                             Toast.LENGTH_LONG
                         ).show()
+
+                        showLoading(false)
+
                     }
                 }
         } catch (e: Exception) {
@@ -396,6 +458,9 @@ class RegisterActivity : AppCompatActivity() {
                 "Error de registro: ${e.message}",
                 Toast.LENGTH_LONG
             ).show()
+
+            showLoading(false)
+
         }
     }
 }

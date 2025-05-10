@@ -5,9 +5,11 @@ import android.content.Intent
 import android.net.ConnectivityManager
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
@@ -36,6 +38,8 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var auth: FirebaseAuth
     private lateinit var googleApiClient: GoogleApiClient
     private lateinit var googleSignInLauncher: ActivityResultLauncher<Intent>
+    private lateinit var progressBar: ProgressBar
+    private lateinit var loadingBackground: View
     
     companion object {
         private const val TAG = "LoginActivity"
@@ -66,6 +70,9 @@ class LoginActivity : AppCompatActivity() {
             
             // Configurar el lanzador de actividad para Google Sign-In
             googleSignInLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+
+                showLoading(false)
+
                 if (result.resultCode == RESULT_OK) {
                     val signInResult = result.data?.let {
                         Auth.GoogleSignInApi.getSignInResultFromIntent(
@@ -75,6 +82,9 @@ class LoginActivity : AppCompatActivity() {
                     if (signInResult != null && signInResult.isSuccess) {
                         val account = signInResult.signInAccount
                         if (account != null) {
+
+                            showLoading(true)
+
                             firebaseAuthWithGoogle(account.idToken!!)
                         } else {
                             Toast.makeText(this, "Error: Cuenta nula", Toast.LENGTH_SHORT).show()
@@ -96,8 +106,15 @@ class LoginActivity : AppCompatActivity() {
             buttonGoogleLogin = findViewById(R.id.buttonGoogleLogin)
             buttonBack = findViewById(R.id.buttonBack)
             textViewRegister = findViewById(R.id.textViewRegister)
-            
-            // Set click listeners
+
+            progressBar = findViewById(R.id.progressBar)
+            loadingBackground = findViewById(R.id.loadingBackground)
+
+            // Asegurar que la carga inicie de forma oculta
+            progressBar.visibility = View.GONE
+            loadingBackground.visibility = View.GONE
+
+
             buttonLogin.setOnClickListener {
                 if (isNetworkAvailable()) {
                     loginUser()
@@ -127,7 +144,7 @@ class LoginActivity : AppCompatActivity() {
             }
             
             textViewRegister.setOnClickListener {
-                // Navigate to register screen
+                // navegar al registro
                 val intent = Intent(this, RegisterActivity::class.java)
                 startActivity(intent)
             }
@@ -139,6 +156,31 @@ class LoginActivity : AppCompatActivity() {
                 Toast.LENGTH_LONG
             ).show()
         }
+    }
+
+    //funcion para mostrar u ocultar el indicador de carga
+    private fun showLoading(isLoading: Boolean){
+        if(isLoading){
+            progressBar.visibility = View.VISIBLE
+            loadingBackground.visibility = View.VISIBLE
+
+            buttonLogin.isEnabled = false
+            buttonGoogleLogin.isEnabled = false
+            buttonBack.isEnabled = false
+            textViewRegister.isEnabled = false
+
+        } else {
+
+            progressBar.visibility = View.GONE
+            loadingBackground.visibility = View.GONE
+
+            buttonLogin.isEnabled = true
+            buttonGoogleLogin.isEnabled = true
+            buttonBack.isEnabled = true
+            textViewRegister.isEnabled = true
+
+        }
+
     }
     
     override fun onStart() {
@@ -181,6 +223,8 @@ class LoginActivity : AppCompatActivity() {
                 editTextPassword.requestFocus()
                 return
             }
+
+            showLoading(true)
             
             // Mostrar mensaje de carga
             Toast.makeText(
@@ -197,6 +241,7 @@ class LoginActivity : AppCompatActivity() {
                         Toast.makeText(this, "Inicio de sesión exitoso", Toast.LENGTH_SHORT).show()
                         val intent = Intent(this, InventoryActivity::class.java)
                         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        showLoading(false)
                         startActivity(intent)
                         finish()
                     } else {
@@ -216,6 +261,8 @@ class LoginActivity : AppCompatActivity() {
                             errorMessage,
                             Toast.LENGTH_SHORT
                         ).show()
+
+                        showLoading(false)
                     }
                 }
         } catch (e: Exception) {
@@ -225,11 +272,13 @@ class LoginActivity : AppCompatActivity() {
                 "Error de inicio de sesión: ${e.message}",
                 Toast.LENGTH_LONG
             ).show()
+            showLoading(false)
         }
     }
     
     private fun signInWithGoogle() {
         try {
+            showLoading(true)
             // Mostrar mensaje de carga
             Toast.makeText(this, "Iniciando sesión con Google...", Toast.LENGTH_SHORT).show()
             
@@ -239,6 +288,8 @@ class LoginActivity : AppCompatActivity() {
             
             val signInIntent = Auth.GoogleSignInApi.getSignInIntent(googleApiClient)
             googleSignInLauncher.launch(signInIntent)
+
+
         } catch (e: Exception) {
             Log.e(TAG, "Error al iniciar sesión con Google: ${e.message}", e)
             Toast.makeText(
@@ -246,6 +297,8 @@ class LoginActivity : AppCompatActivity() {
                 "Error al iniciar el proceso de autenticación con Google: ${e.message}",
                 Toast.LENGTH_SHORT
             ).show()
+
+            showLoading(false)
         }
     }
     
@@ -254,6 +307,9 @@ class LoginActivity : AppCompatActivity() {
             val credential = GoogleAuthProvider.getCredential(idToken, null)
             auth.signInWithCredential(credential)
                 .addOnCompleteListener(this) { task ->
+
+                    showLoading(false)
+
                     if (task.isSuccessful) {
                         // Sign in success
                         Log.d(TAG, "signInWithCredential:success")
@@ -263,7 +319,7 @@ class LoginActivity : AppCompatActivity() {
                         startActivity(intent)
                         finish()
                     } else {
-                        // Sign in failed
+                        // falla
                         val exception = task.exception
                         Log.e(TAG, "signInWithCredential:failure", exception)
                         
@@ -281,6 +337,10 @@ class LoginActivity : AppCompatActivity() {
                     }
                 }
         } catch (e: Exception) {
+
+
+            showLoading(false)
+
             Log.e(TAG, "Error en firebaseAuthWithGoogle: ${e.message}", e)
             Toast.makeText(
                 this,

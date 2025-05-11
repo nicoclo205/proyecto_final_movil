@@ -164,17 +164,15 @@ class OrderActivity : AppCompatActivity() {
     }
     
     private fun setupButtonListeners() {
-        // Add new order
+
         buttonAdd.setOnClickListener {
             showAddOrderDialog()
         }
-        
-        // Search orders (you could implement this functionality)
+
         buttonSearch.setOnClickListener {
             Toast.makeText(this, "Funcionalidad de búsqueda en desarrollo", Toast.LENGTH_SHORT).show()
         }
-        
-        // Navigation buttons
+
         homeButton.setOnClickListener {
             startActivity(Intent(this, InventoryActivity::class.java))
             finish()

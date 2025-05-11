@@ -4,7 +4,6 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
-import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
@@ -18,10 +17,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.projectofinal.adapter.OrderAdapter
-import com.example.projectofinal.adapter.OrderProductAdapter
 import com.example.projectofinal.model.Order
-import com.example.projectofinal.model.OrderProduct
-import com.example.projectofinal.model.Product
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
@@ -44,7 +40,6 @@ class OrderActivity : AppCompatActivity() {
     
     private lateinit var orderAdapter: OrderAdapter
     private val ordersList = mutableListOf<Order>()
-    private val productsList = mutableListOf<Product>()
     
     private lateinit var progressBar: ProgressBar
     private lateinit var loadingBackground: View
@@ -127,25 +122,8 @@ class OrderActivity : AppCompatActivity() {
     }
     
     private fun loadProducts() {
-        showLoading(true)
-        database.child("products").addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                productsList.clear()
-                
-                for (productSnapshot in snapshot.children) {
-                    val product = productSnapshot.getValue(Product::class.java)
-                    product?.let { productsList.add(it) }
-                }
-                
-                showLoading(false)
-            }
-            
-            override fun onCancelled(error: DatabaseError) {
-                Toast.makeText(this@OrderActivity, "Error al cargar productos: ${error.message}", 
-                    Toast.LENGTH_SHORT).show()
-                showLoading(false)
-            }
-        })
+        // Ya no necesitamos cargar productos para la vista simplificada
+        showLoading(false)
     }
     
     private fun loadOrders() {
@@ -230,38 +208,10 @@ class OrderActivity : AppCompatActivity() {
         val etCustomerName = dialogLayout.findViewById<EditText>(R.id.etCustomerName)
         val etPhone = dialogLayout.findViewById<EditText>(R.id.etPhone)
         val etAddress = dialogLayout.findViewById<EditText>(R.id.etAddress)
-        val recyclerOrderProducts = dialogLayout.findViewById<RecyclerView>(R.id.recyclerOrderProducts)
-        val btnAddProduct = dialogLayout.findViewById<Button>(R.id.btnAddProduct)
-        val tvTotalAmount = dialogLayout.findViewById<TextView>(R.id.tvTotalAmount)
+        val etDescription = dialogLayout.findViewById<EditText>(R.id.etDescription)
+        val etTotalAmount = dialogLayout.findViewById<EditText>(R.id.etTotalAmount)
         val btnClose = dialogLayout.findViewById<ImageButton>(R.id.btnClose)
         val btnSaveOrder = dialogLayout.findViewById<Button>(R.id.btnSaveOrder)
-        
-        // Setup RecyclerView for order products
-        val orderProductsList = mutableListOf<OrderProduct>()
-        val orderProductAdapter = OrderProductAdapter(orderProductsList)
-        recyclerOrderProducts.layoutManager = LinearLayoutManager(this)
-        recyclerOrderProducts.adapter = orderProductAdapter
-        
-        // Handle removing products from the order
-        orderProductAdapter.setOnOrderProductClickListener(object : OrderProductAdapter.OnOrderProductClickListener {
-            override fun onRemoveProductClick(orderProduct: OrderProduct, position: Int) {
-                orderProductAdapter.removeProduct(position)
-                // Update total amount
-                val totalAmount = orderProductAdapter.calculateTotal()
-                val format = NumberFormat.getCurrencyInstance(Locale("es", "MX"))
-                tvTotalAmount.text = "Total: ${format.format(totalAmount)}"
-            }
-        })
-        
-        // Add product to order
-        btnAddProduct.setOnClickListener {
-            if (productsList.isEmpty()) {
-                Toast.makeText(this, "No hay productos disponibles", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            
-            showSelectProductDialog(orderProductAdapter, tvTotalAmount)
-        }
         
         // Close button
         btnClose.setOnClickListener {
@@ -275,6 +225,8 @@ class OrderActivity : AppCompatActivity() {
             val customerName = etCustomerName.text.toString().trim()
             val phone = etPhone.text.toString().trim()
             val address = etAddress.text.toString().trim()
+            val description = etDescription.text.toString().trim()
+            val totalAmountStr = etTotalAmount.text.toString().trim()
             
             // Validate inputs
             if (customerName.isEmpty()) {
@@ -295,22 +247,34 @@ class OrderActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
             
-            if (orderProductAdapter.getOrderProducts().isEmpty()) {
-                Toast.makeText(this, "Agregue al menos un producto", Toast.LENGTH_SHORT).show()
+            if (description.isEmpty()) {
+                Toast.makeText(this, "Ingrese una descripción del pedido", Toast.LENGTH_SHORT).show()
+                showLoading(false)
+                return@setOnClickListener
+            }
+            
+            if (totalAmountStr.isEmpty()) {
+                Toast.makeText(this, "Ingrese el monto total", Toast.LENGTH_SHORT).show()
+                showLoading(false)
+                return@setOnClickListener
+            }
+            
+            val totalAmount = totalAmountStr.toDoubleOrNull()
+            if (totalAmount == null || totalAmount <= 0) {
+                Toast.makeText(this, "El monto total debe ser un número positivo", Toast.LENGTH_SHORT).show()
                 showLoading(false)
                 return@setOnClickListener
             }
             
             // Create and save the order
             val orderId = database.child("orders").push().key ?: return@setOnClickListener
-            val totalAmount = orderProductAdapter.calculateTotal()
             
             val order = Order(
                 id = orderId,
                 customerName = customerName,
                 phone = phone,
                 address = address,
-                products = orderProductAdapter.getOrderProducts(),
+                description = description,
                 totalAmount = totalAmount,
                 orderDate = Date().time,
                 status = "Pendiente"
@@ -321,9 +285,6 @@ class OrderActivity : AppCompatActivity() {
                     Toast.makeText(this, "Pedido guardado exitosamente", Toast.LENGTH_SHORT).show()
                     showLoading(false)
                     dialog.dismiss()
-                    
-                    // Optionally update product inventory quantities
-                    updateInventoryQuantities(order.products)
                 }
                 .addOnFailureListener { e ->
                     Toast.makeText(this, "Error al guardar pedido: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -336,172 +297,7 @@ class OrderActivity : AppCompatActivity() {
         dialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
     }
     
-    private fun showSelectProductDialog(orderProductAdapter: OrderProductAdapter, tvTotalAmount: TextView) {
-        val builder = AlertDialog.Builder(this, R.style.RoundedCornerDialog)
-        
-        val inflater = layoutInflater
-        val dialogLayout = inflater.inflate(R.layout.dialog_select_product, null)
-        builder.setView(dialogLayout)
-        
-        val dialog = builder.create()
-        
-        val spinnerProducts = dialogLayout.findViewById<Spinner>(R.id.spinnerProducts)
-        val etQuantity = dialogLayout.findViewById<EditText>(R.id.etQuantity)
-        val tvAvailableQuantity = dialogLayout.findViewById<TextView>(R.id.tvAvailableQuantity)
-        val tvProductPrice = dialogLayout.findViewById<TextView>(R.id.tvProductPrice)
-        val tvSubtotal = dialogLayout.findViewById<TextView>(R.id.tvSubtotal)
-        val btnCloseProduct = dialogLayout.findViewById<ImageButton>(R.id.btnCloseProduct)
-        val btnAddToOrder = dialogLayout.findViewById<Button>(R.id.btnAddToOrder)
-        
-        // Setup products spinner
-        val productNames = productsList.map { it.name }.toMutableList()
-        val spinnerAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, productNames)
-        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        spinnerProducts.adapter = spinnerAdapter
-        
-        var selectedProduct: Product? = null
-        
-        // Handle product selection
-        spinnerProducts.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                selectedProduct = productsList[position]
-                
-                // Update available quantity
-                tvAvailableQuantity.text = "Disponible: ${selectedProduct?.quantity ?: 0}"
-                
-                // Update price
-                val format = NumberFormat.getCurrencyInstance(Locale("es", "MX"))
-                tvProductPrice.text = "Precio: ${format.format(selectedProduct?.price ?: 0.0)}"
-                
-                // Reset quantity and subtotal
-                etQuantity.setText("1")
-                calculateSubtotal(selectedProduct, etQuantity, tvSubtotal)
-            }
-            
-            override fun onNothingSelected(parent: AdapterView<*>?) {
-                selectedProduct = null
-                tvAvailableQuantity.text = "Disponible: 0"
-                tvProductPrice.text = "Precio: $0.00"
-            }
-        }
-        
-        // Calculate subtotal when quantity changes
-        etQuantity.setOnEditorActionListener { _, _, _ ->
-            calculateSubtotal(selectedProduct, etQuantity, tvSubtotal)
-            false
-        }
-        
-        // Close button
-        btnCloseProduct.setOnClickListener {
-            dialog.dismiss()
-        }
-        
-        // Add product to order
-        btnAddToOrder.setOnClickListener {
-            showLoading(true)
-            
-            val product = selectedProduct ?: return@setOnClickListener
-            
-            val quantityStr = etQuantity.text.toString().trim()
-            if (quantityStr.isEmpty()) {
-                Toast.makeText(this, "Ingrese una cantidad", Toast.LENGTH_SHORT).show()
-                showLoading(false)
-                return@setOnClickListener
-            }
-            
-            val quantity = quantityStr.toIntOrNull()
-            if (quantity == null || quantity <= 0) {
-                Toast.makeText(this, "La cantidad debe ser un número positivo", Toast.LENGTH_SHORT).show()
-                showLoading(false)
-                return@setOnClickListener
-            }
-            
-            if (quantity > product.quantity) {
-                Toast.makeText(this, "No hay suficiente inventario", Toast.LENGTH_SHORT).show()
-                showLoading(false)
-                return@setOnClickListener
-            }
-            
-            // Check if product already exists in order
-            val existingProducts = orderProductAdapter.getOrderProducts()
-            val existingProductIndex = existingProducts.indexOfFirst { it.productId == product.id }
-            
-            if (existingProductIndex >= 0) {
-                // Ask if user wants to update the quantity
-                AlertDialog.Builder(this)
-                    .setTitle("Producto ya en el pedido")
-                    .setMessage("Este producto ya está en el pedido. ¿Desea actualizar la cantidad?")
-                    .setPositiveButton("Sí") { _, _ ->
-                        // Create a new order product with updated quantity
-                        val existingProduct = existingProducts[existingProductIndex]
-                        val newQuantity = existingProduct.quantity + quantity
-                        
-                        if (newQuantity > product.quantity) {
-                            Toast.makeText(this, "No hay suficiente inventario para la cantidad total", 
-                                Toast.LENGTH_SHORT).show()
-                            showLoading(false)
-                            return@setPositiveButton
-                        }
-                        
-                        // Remove old product and add updated one
-                        orderProductAdapter.removeProduct(existingProductIndex)
-                        
-                        val orderProduct = OrderProduct(
-                            productId = product.id,
-                            productName = product.name,
-                            quantity = newQuantity,
-                            pricePerUnit = product.price
-                        )
-                        
-                        orderProductAdapter.addProduct(orderProduct)
-                        
-                        // Update total
-                        val totalAmount = orderProductAdapter.calculateTotal()
-                        val format = NumberFormat.getCurrencyInstance(Locale("es", "MX"))
-                        tvTotalAmount.text = "Total: ${format.format(totalAmount)}"
-                        
-                        showLoading(false)
-                        dialog.dismiss()
-                    }
-                    .setNegativeButton("No") { _, _ ->
-                        showLoading(false)
-                    }
-                    .show()
-            } else {
-                // Add new product to order
-                val orderProduct = OrderProduct(
-                    productId = product.id,
-                    productName = product.name,
-                    quantity = quantity,
-                    pricePerUnit = product.price
-                )
-                
-                orderProductAdapter.addProduct(orderProduct)
-                
-                // Update total
-                val totalAmount = orderProductAdapter.calculateTotal()
-                val format = NumberFormat.getCurrencyInstance(Locale("es", "MX"))
-                tvTotalAmount.text = "Total: ${format.format(totalAmount)}"
-                
-                showLoading(false)
-                dialog.dismiss()
-            }
-        }
-        
-        dialog.show()
-        // Set dialog width
-        dialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-    }
-    
-    private fun calculateSubtotal(product: Product?, etQuantity: EditText, tvSubtotal: TextView) {
-        val quantityStr = etQuantity.text.toString().trim()
-        val quantity = quantityStr.toIntOrNull() ?: 0
-        val price = product?.price ?: 0.0
-        val subtotal = quantity * price
-        
-        val format = NumberFormat.getCurrencyInstance(Locale("es", "MX"))
-        tvSubtotal.text = "Subtotal: ${format.format(subtotal)}"
-    }
+
     
     private fun showOrderDetailsDialog(order: Order) {
         val builder = AlertDialog.Builder(this, R.style.RoundedCornerDialog)
@@ -518,7 +314,7 @@ class OrderActivity : AppCompatActivity() {
         val tvAddress = dialogLayout.findViewById<TextView>(R.id.tvAddress)
         val tvOrderDate = dialogLayout.findViewById<TextView>(R.id.tvOrderDate)
         val tvStatus = dialogLayout.findViewById<TextView>(R.id.tvStatus)
-        val recyclerOrderProducts = dialogLayout.findViewById<RecyclerView>(R.id.recyclerOrderProducts)
+        val tvDescription = dialogLayout.findViewById<TextView>(R.id.tvDescription)
         val tvTotalAmount = dialogLayout.findViewById<TextView>(R.id.tvTotalAmount)
         val btnClose = dialogLayout.findViewById<ImageButton>(R.id.btnClose)
         val btnEdit = dialogLayout.findViewById<Button>(R.id.btnEdit)
@@ -535,14 +331,7 @@ class OrderActivity : AppCompatActivity() {
         tvOrderDate.text = "Fecha: ${dateFormat.format(orderDate)}"
         
         tvStatus.text = "Estado: ${order.status}"
-        
-        // Setup RecyclerView for order products (read-only mode)
-        val orderProductAdapter = OrderProductAdapter(order.products.toMutableList())
-        // Disable remove button for details view
-        orderProductAdapter.setReadOnlyMode(true)
-        
-        recyclerOrderProducts.layoutManager = LinearLayoutManager(this)
-        recyclerOrderProducts.adapter = orderProductAdapter
+        tvDescription.text = "Descripción: ${order.description}"
         
         // Set total amount
         val format = NumberFormat.getCurrencyInstance(Locale("es", "MX"))
@@ -583,9 +372,8 @@ class OrderActivity : AppCompatActivity() {
         val etPhone = dialogLayout.findViewById<EditText>(R.id.etPhone)
         val etAddress = dialogLayout.findViewById<EditText>(R.id.etAddress)
         val spinnerStatus = dialogLayout.findViewById<Spinner>(R.id.spinnerStatus)
-        val recyclerOrderProducts = dialogLayout.findViewById<RecyclerView>(R.id.recyclerOrderProducts)
-        val btnAddProduct = dialogLayout.findViewById<Button>(R.id.btnAddProduct)
-        val tvTotalAmount = dialogLayout.findViewById<TextView>(R.id.tvTotalAmount)
+        val etDescription = dialogLayout.findViewById<EditText>(R.id.etDescription)
+        val etTotalAmount = dialogLayout.findViewById<EditText>(R.id.etTotalAmount)
         val btnClose = dialogLayout.findViewById<ImageButton>(R.id.btnClose)
         val btnSaveOrder = dialogLayout.findViewById<Button>(R.id.btnSaveOrder)
         
@@ -593,6 +381,8 @@ class OrderActivity : AppCompatActivity() {
         etCustomerName.setText(order.customerName)
         etPhone.setText(order.phone)
         etAddress.setText(order.address)
+        etDescription.setText(order.description)
+        etTotalAmount.setText(order.totalAmount.toString())
         
         // Setup status spinner
         val statusOptions = arrayOf("Pendiente", "En Proceso", "Completado", "Cancelado")
@@ -604,36 +394,6 @@ class OrderActivity : AppCompatActivity() {
         val statusPosition = statusOptions.indexOf(order.status)
         if (statusPosition >= 0) {
             spinnerStatus.setSelection(statusPosition)
-        }
-        
-        // Setup RecyclerView for order products
-        val orderProductsList = order.products.toMutableList()
-        val orderProductAdapter = OrderProductAdapter(orderProductsList)
-        recyclerOrderProducts.layoutManager = LinearLayoutManager(this)
-        recyclerOrderProducts.adapter = orderProductAdapter
-        
-        // Set total amount
-        val format = NumberFormat.getCurrencyInstance(Locale("es", "MX"))
-        tvTotalAmount.text = "Total: ${format.format(order.totalAmount)}"
-        
-        // Handle removing products from the order
-        orderProductAdapter.setOnOrderProductClickListener(object : OrderProductAdapter.OnOrderProductClickListener {
-            override fun onRemoveProductClick(orderProduct: OrderProduct, position: Int) {
-                orderProductAdapter.removeProduct(position)
-                // Update total amount
-                val totalAmount = orderProductAdapter.calculateTotal()
-                tvTotalAmount.text = "Total: ${format.format(totalAmount)}"
-            }
-        })
-        
-        // Add product to order
-        btnAddProduct.setOnClickListener {
-            if (productsList.isEmpty()) {
-                Toast.makeText(this, "No hay productos disponibles", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            
-            showSelectProductDialog(orderProductAdapter, tvTotalAmount)
         }
         
         // Close button
@@ -648,6 +408,8 @@ class OrderActivity : AppCompatActivity() {
             val customerName = etCustomerName.text.toString().trim()
             val phone = etPhone.text.toString().trim()
             val address = etAddress.text.toString().trim()
+            val description = etDescription.text.toString().trim()
+            val totalAmountStr = etTotalAmount.text.toString().trim()
             val status = statusOptions[spinnerStatus.selectedItemPosition]
             
             // Validate inputs
@@ -669,21 +431,32 @@ class OrderActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
             
-            if (orderProductAdapter.getOrderProducts().isEmpty()) {
-                Toast.makeText(this, "Agregue al menos un producto", Toast.LENGTH_SHORT).show()
+            if (description.isEmpty()) {
+                Toast.makeText(this, "Ingrese una descripción del pedido", Toast.LENGTH_SHORT).show()
+                showLoading(false)
+                return@setOnClickListener
+            }
+            
+            if (totalAmountStr.isEmpty()) {
+                Toast.makeText(this, "Ingrese el monto total", Toast.LENGTH_SHORT).show()
+                showLoading(false)
+                return@setOnClickListener
+            }
+            
+            val totalAmount = totalAmountStr.toDoubleOrNull()
+            if (totalAmount == null || totalAmount <= 0) {
+                Toast.makeText(this, "El monto total debe ser un número positivo", Toast.LENGTH_SHORT).show()
                 showLoading(false)
                 return@setOnClickListener
             }
             
             // Update the order
-            val totalAmount = orderProductAdapter.calculateTotal()
-            
             val updatedOrder = Order(
                 id = order.id,
                 customerName = customerName,
                 phone = phone,
                 address = address,
-                products = orderProductAdapter.getOrderProducts(),
+                description = description,
                 totalAmount = totalAmount,
                 orderDate = order.orderDate,
                 status = status
@@ -731,24 +504,5 @@ class OrderActivity : AppCompatActivity() {
                 Toast.makeText(this, "Error al eliminar pedido: ${e.message}", Toast.LENGTH_SHORT).show()
                 showLoading(false)
             }
-    }
-    
-    private fun updateInventoryQuantities(orderProducts: List<OrderProduct>) {
-        // Update inventory quantities based on order
-        // This is optional and can be implemented based on your business logic
-        for (orderProduct in orderProducts) {
-            val productRef = database.child("products").child(orderProduct.productId)
-            
-            productRef.get().addOnSuccessListener { snapshot ->
-                val product = snapshot.getValue(Product::class.java)
-                product?.let {
-                    val newQuantity = it.quantity - orderProduct.quantity
-                    
-                    if (newQuantity >= 0) {
-                        productRef.child("quantity").setValue(newQuantity)
-                    }
-                }
-            }
-        }
     }
 }

@@ -60,9 +60,12 @@ class OrderAdapter(private var orders: List<Order>) :
         holder.textOrderDate.text = "Fecha: ${dateFormat.format(orderDate)}"
 
         // Set product count
-        val itemCount = order.products.size
-        val itemText = if (itemCount == 1) "producto" else "productos"
-        holder.textItemCount.text = "Productos: $itemCount $itemText"
+        val description = if (order.description.length > 30) {
+            "${order.description.substring(0, 30)}..."
+        } else {
+            order.description
+        }
+        holder.textItemCount.text = "Desc: $description"
 
         // Format and set total amount
         val format = NumberFormat.getCurrencyInstance(Locale("es", "MX"))

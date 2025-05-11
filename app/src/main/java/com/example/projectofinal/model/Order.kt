@@ -10,13 +10,13 @@ data class Order(
     val customerName: String = "", // Nombre del cliente
     val phone: String = "", // Teléfono del cliente
     val address: String = "", // Dirección de entrega
-    val products: List<OrderProduct> = listOf(), // Lista de productos del pedido
+    val description: String = "", // Descripción del pedido
     val totalAmount: Double = 0.0, // Monto total del pedido
     val orderDate: Long = Date().time, // Fecha del pedido (en milisegundos)
     val status: String = "Pendiente" // Estado del pedido (Pendiente, En Proceso, Completado, etc.)
 ) {
     // Constructor sin argumentos requerido para Firebase
-    constructor() : this("", "", "", "", listOf(), 0.0, Date().time, "Pendiente")
+    constructor() : this("", "", "", "", "", 0.0, Date().time, "Pendiente")
 }
 
 /**

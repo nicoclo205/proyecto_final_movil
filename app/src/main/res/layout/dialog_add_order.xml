@@ -117,12 +117,12 @@
 
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- Selección de productos -->
+    <!-- Descripción del pedido -->
     <TextView
-        android:id="@+id/productsTitle"
+        android:id="@+id/descriptionTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Productos"
+        android:text="Descripción del pedido"
         android:textColor="@color/black"
         android:textSize="16sp"
         android:textStyle="bold"
@@ -131,43 +131,53 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerOrderProducts"
-        android:layout_width="match_parent"
-        android:layout_height="200dp"
-        android:layout_marginTop="8dp"
-        app:layout_constraintTop_toBottomOf="@id/productsTitle"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
-
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/btnAddProduct"
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/descriptionLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="Agregar Producto"
-        android:textAllCaps="false"
-        android:background="@drawable/pink_button"
-        android:textColor="@color/white"
-        app:layout_constraintTop_toBottomOf="@id/recyclerOrderProducts"
+        app:layout_constraintTop_toBottomOf="@id/descriptionTitle"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        app:layout_constraintEnd_toEndOf="parent">
 
-    <!-- Resumen de la orden -->
-    <TextView
-        android:id="@+id/tvTotalAmount"
+        <EditText
+            android:id="@+id/etDescription"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Detalles del pedido"
+            android:inputType="textMultiLine"
+            android:minLines="3"
+            android:maxLines="5"
+            android:padding="12dp"
+            android:textColorHint="@color/myHintColor"
+            android:importantForAutofill="no"
+            android:background="@drawable/rounded_edittext"/>
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Campo para ingresar el monto total -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/totalAmountLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Total: $0.00"
-        android:textColor="@color/black"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:gravity="end"
         android:layout_marginTop="16dp"
-        android:layout_marginEnd="10dp"
-        app:layout_constraintTop_toBottomOf="@id/btnAddProduct"
+        app:layout_constraintTop_toBottomOf="@id/descriptionLayout"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <EditText
+            android:id="@+id/etTotalAmount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Monto total"
+            android:inputType="numberDecimal"
+            android:maxLines="1"
+            android:padding="12dp"
+            android:textColorHint="@color/myHintColor"
+            android:importantForAutofill="no"
+            android:background="@drawable/rounded_edittext"/>
+
+    </com.google.android.material.textfield.TextInputLayout>
 
     <!-- Botones de acción -->
     <LinearLayout
@@ -176,7 +186,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:layout_marginTop="16dp"
-        app:layout_constraintTop_toBottomOf="@id/tvTotalAmount"
+        app:layout_constraintTop_toBottomOf="@id/totalAmountLayout"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toBottomOf="parent">

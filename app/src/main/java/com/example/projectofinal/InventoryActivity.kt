@@ -13,6 +13,7 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
@@ -45,6 +46,9 @@ class InventoryActivity : AppCompatActivity() {
     private var currentImageButton: Button? = null  // Referencia al botón de imagen actual
     private val storageRef = FirebaseStorage.getInstance().reference
     private val database = FirebaseDatabase.getInstance().reference
+    
+    private lateinit var progressBar: ProgressBar
+    private lateinit var loadingBackground: View
     
     // Activity result launcher for image selection
     private val getContent = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -85,6 +89,13 @@ class InventoryActivity : AppCompatActivity() {
         recyclerProducts = findViewById(R.id.recyclerProducts)
         textEmptyProducts = findViewById(R.id.textEmptyProducts)
         
+        progressBar = findViewById(R.id.progressBar)
+        loadingBackground = findViewById(R.id.loadingBackground)
+        
+        // Asegurar que la carga inicie de forma oculta
+        progressBar.visibility = View.GONE
+        loadingBackground.visibility = View.GONE
+        
         // Setup navigation buttons if they exist
         val orderButton = findViewById<ImageButton>(R.id.orderButton)
         orderButton?.setOnClickListener {
@@ -123,6 +134,8 @@ class InventoryActivity : AppCompatActivity() {
             
             // manejo agregación  productos
             btnAddProduct.setOnClickListener {
+                // Mostrar carga
+                showLoading(true)
                 val name = etProductName.text.toString().trim()
                 val quantityStr = etQuantity.text.toString().trim()
                 val priceStr = etPrice.text.toString().trim()
@@ -171,6 +184,16 @@ class InventoryActivity : AppCompatActivity() {
         val productId = database.child("products").push().key ?: return
         val imageRef = storageRef.child("product_images/$productId.jpg")
         
+        // Mostrar progress bar en el diálogo
+        val progressBar = dialog.findViewById<ProgressBar>(R.id.progressBar)
+        val loadingBackground = dialog.findViewById<View>(R.id.loadingBackground)
+        if (progressBar != null) {
+            progressBar.visibility = View.VISIBLE
+        }
+        if (loadingBackground != null) {
+            loadingBackground.visibility = View.VISIBLE
+        }
+        
         val uploadTask = selectedImageUri?.let { imageRef.putFile(it) }
         uploadTask?.addOnSuccessListener {
             // Get download URL
@@ -197,8 +220,24 @@ class InventoryActivity : AppCompatActivity() {
         })
     }
     
+    //función para mostrar u ocultar el indicador de carga
+    private fun showLoading(isLoading: Boolean){
+        if(isLoading){
+            progressBar.visibility = View.VISIBLE
+            loadingBackground.visibility = View.VISIBLE
+            
+            buttonAdd.isEnabled = false
+        } else {
+            progressBar.visibility = View.GONE
+            loadingBackground.visibility = View.GONE
+            
+            buttonAdd.isEnabled = true
+        }
+    }
+    
     private fun loadProducts() {
-        // Show loading or progress indicator if needed
+        // Mostrar indicador de carga
+        showLoading(true)
         database.child("products").addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 productsList.clear()
@@ -219,11 +258,16 @@ class InventoryActivity : AppCompatActivity() {
                     textEmptyProducts.visibility = View.GONE
                     recyclerProducts.visibility = View.VISIBLE
                 }
+                
+                // Ocultar indicador de carga
+                showLoading(false)
             }
             
             override fun onCancelled(error: DatabaseError) {
                 Toast.makeText(this@InventoryActivity, "Error al cargar productos: ${error.message}", 
                     Toast.LENGTH_SHORT).show()
+                // Ocultar indicador de carga en caso de error
+                showLoading(false)
             }
         })
     }
@@ -232,16 +276,42 @@ class InventoryActivity : AppCompatActivity() {
         val productId = database.child("products").push().key ?: return
         val product = Product(productId, name, quantity, price, imageUrl)
         
+        // Mostrar progress bar en el diálogo si no está visible
+        val progressBar = dialog.findViewById<ProgressBar>(R.id.progressBar)
+        val loadingBackground = dialog.findViewById<View>(R.id.loadingBackground)
+        if (progressBar != null) {
+            if (progressBar.visibility != View.VISIBLE) {
+                progressBar.visibility = View.VISIBLE
+                if (loadingBackground != null) {
+                    loadingBackground.visibility = View.VISIBLE
+                }
+            }
+        }
+        
         database.child("products").child(productId).setValue(product)
             .addOnSuccessListener {
                 Toast.makeText(this, "Producto agregado exitosamente", Toast.LENGTH_SHORT).show()
                 selectedImageUri = null
                 currentImageButton = null  // Limpiar la referencia al botón
+                // Ocultar progress bar
+                if (progressBar != null) {
+                    progressBar.visibility = View.GONE
+                }
+                if (loadingBackground != null) {
+                    loadingBackground.visibility = View.GONE
+                }
                 dialog.dismiss()
 
             }
             .addOnFailureListener { e ->
                 Toast.makeText(this, "Error al agregar producto: ${e.message}", Toast.LENGTH_SHORT).show()
+                // Ocultar progress bar
+                if (progressBar != null) {
+                    progressBar.visibility = View.GONE
+                }
+                if (loadingBackground != null) {
+                    loadingBackground.visibility = View.GONE
+                }
             }
     }
     
@@ -302,6 +372,7 @@ class InventoryActivity : AppCompatActivity() {
         
         // Handle update
         btnUpdateProduct.setOnClickListener {
+            showLoading(true)
             val name = etProductName.text.toString().trim()
             val quantityStr = etQuantity.text.toString().trim()
             val priceStr = etPrice.text.toString().trim()
@@ -309,18 +380,21 @@ class InventoryActivity : AppCompatActivity() {
             // Validate inputs
             if (name.isEmpty() || quantityStr.isEmpty() || priceStr.isEmpty()) {
                 Toast.makeText(this, "Por favor complete todos los campos", Toast.LENGTH_SHORT).show()
+                showLoading(false)
                 return@setOnClickListener
             }
             
             val quantity = quantityStr.toIntOrNull()
             if (quantity == null || quantity <= 0) {
                 Toast.makeText(this, "La cantidad debe ser un número positivo", Toast.LENGTH_SHORT).show()
+                showLoading(false)
                 return@setOnClickListener
             }
             
             val price = priceStr.toDoubleOrNull()
             if (price == null || price <= 0) {
                 Toast.makeText(this, "El precio debe ser un número positivo", Toast.LENGTH_SHORT).show()
+                showLoading(false)
                 return@setOnClickListener
             }
             
@@ -335,6 +409,7 @@ class InventoryActivity : AppCompatActivity() {
         
         // manejo borrar producto
         btnDeleteProduct.setOnClickListener {
+            showLoading(true)
             // Show confirmation dialog
             AlertDialog.Builder(this)
                 .setTitle("Confirmar eliminación")
@@ -342,7 +417,9 @@ class InventoryActivity : AppCompatActivity() {
                 .setPositiveButton("Sí") { _, _ ->
                     deleteProduct(product.id, product.imageUrl, dialog)
                 }
-                .setNegativeButton("No", null)
+                .setNegativeButton("No") { _, _ ->
+                    showLoading(false)
+                }
                 .show()
         }
         
@@ -368,9 +445,15 @@ class InventoryActivity : AppCompatActivity() {
                 updateProduct(productId, name, quantity, price, downloadUrl.toString(), dialog)
             }.addOnFailureListener { e ->
                 Toast.makeText(this, "Error al obtener URL de imagen: ${e.message}", Toast.LENGTH_SHORT).show()
+                // Ocultar progress bar en caso de error
+                progressBar.visibility = View.GONE
+                loadingBackground.visibility = View.GONE
             }
         }?.addOnFailureListener { e ->
             Toast.makeText(this, "Error al subir imagen: ${e.message}", Toast.LENGTH_SHORT).show()
+            // Ocultar progress bar en caso de error
+            progressBar.visibility = View.GONE
+            loadingBackground.visibility = View.GONE
         }
     }
     
@@ -382,16 +465,36 @@ class InventoryActivity : AppCompatActivity() {
             "imageUrl" to imageUrl
         )
         
+        // Mostrar progress bar en el diálogo si no está visible
+        val progressBar = dialog.findViewById<ProgressBar>(R.id.progressBar)
+        val loadingBackground = dialog.findViewById<View>(R.id.loadingBackground)
+        if (progressBar != null) {
+            if (progressBar.visibility != View.VISIBLE) {
+                progressBar.visibility = View.VISIBLE
+                if (loadingBackground != null) {
+                    loadingBackground.visibility = View.VISIBLE
+                }
+            }
+        }
+        
         database.child("products").child(productId).updateChildren(productUpdates)
             .addOnSuccessListener {
                 Toast.makeText(this, "Producto actualizado exitosamente", Toast.LENGTH_SHORT).show()
                 selectedImageUri = null
                 currentImageButton = null  // Limpiar la referencia al botón
+                // Ocultar progress bar
+                if (progressBar != null) {
+                    progressBar.visibility = View.GONE
+                }
+                if (loadingBackground != null) {
+                    loadingBackground.visibility = View.GONE
+                }
                 dialog.dismiss()
                 // Products will be refreshed automatically by the ValueEventListener
             }
             .addOnFailureListener { e ->
                 Toast.makeText(this, "Error al actualizar producto: ${e.message}", Toast.LENGTH_SHORT).show()
+                showLoading(false)
             }
     }
     
@@ -405,24 +508,29 @@ class InventoryActivity : AppCompatActivity() {
                         val imageRef = FirebaseStorage.getInstance().getReferenceFromUrl(imageUrl)
                         imageRef.delete().addOnSuccessListener {
                             Toast.makeText(this, "Producto eliminado exitosamente", Toast.LENGTH_SHORT).show()
+                            showLoading(false)
                             dialog.dismiss()
                         }.addOnFailureListener { e ->
                             // Even if image deletion fails, we consider it a success since the product data is gone
                             Toast.makeText(this, "Producto eliminado. Error al eliminar imagen: ${e.message}", Toast.LENGTH_SHORT).show()
+                            showLoading(false)
                             dialog.dismiss()
                         }
                     } catch (e: Exception) {
                         // If we can't get a reference to the image, just consider it a success
                         Toast.makeText(this, "Producto eliminado exitosamente", Toast.LENGTH_SHORT).show()
+                        showLoading(false)
                         dialog.dismiss()
                     }
                 } else {
                     Toast.makeText(this, "Producto eliminado exitosamente", Toast.LENGTH_SHORT).show()
+                    showLoading(false)
                     dialog.dismiss()
                 }
             }
             .addOnFailureListener { e ->
                 Toast.makeText(this, "Error al eliminar producto: ${e.message}", Toast.LENGTH_SHORT).show()
+                showLoading(false)
             }
     }
 }

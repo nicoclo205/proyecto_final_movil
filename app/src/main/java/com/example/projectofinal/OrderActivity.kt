@@ -9,6 +9,7 @@ import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
+import android.widget.ProgressBar
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
@@ -45,6 +46,9 @@ class OrderActivity : AppCompatActivity() {
     private val ordersList = mutableListOf<Order>()
     private val productsList = mutableListOf<Product>()
     
+    private lateinit var progressBar: ProgressBar
+    private lateinit var loadingBackground: View
+    
     private val database = FirebaseDatabase.getInstance().reference
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -62,6 +66,13 @@ class OrderActivity : AppCompatActivity() {
         recordsButton = findViewById(R.id.recordsButton)
         infoButton = findViewById(R.id.infoButton)
         
+        progressBar = findViewById(R.id.progressBar)
+        loadingBackground = findViewById(R.id.loadingBackground)
+        
+        // Asegurar que la carga inicie de forma oculta
+        progressBar.visibility = View.GONE
+        loadingBackground.visibility = View.GONE
+        
         // Setup RecyclerView
         setupRecyclerView()
         
@@ -73,6 +84,33 @@ class OrderActivity : AppCompatActivity() {
         
         // Setup button clicks
         setupButtonListeners()
+    }
+    
+    //función para mostrar u ocultar el indicador de carga
+    private fun showLoading(isLoading: Boolean){
+        if(isLoading){
+            progressBar.visibility = View.VISIBLE
+            loadingBackground.visibility = View.VISIBLE
+            
+            buttonAdd.isEnabled = false
+            buttonSearch.isEnabled = false
+            homeButton.isEnabled = false
+            orderButton.isEnabled = false
+            calculatorButton.isEnabled = false
+            recordsButton.isEnabled = false
+            infoButton.isEnabled = false
+        } else {
+            progressBar.visibility = View.GONE
+            loadingBackground.visibility = View.GONE
+            
+            buttonAdd.isEnabled = true
+            buttonSearch.isEnabled = true
+            homeButton.isEnabled = true
+            orderButton.isEnabled = true
+            calculatorButton.isEnabled = true
+            recordsButton.isEnabled = true
+            infoButton.isEnabled = true
+        }
     }
     
     private fun setupRecyclerView() {
@@ -89,6 +127,7 @@ class OrderActivity : AppCompatActivity() {
     }
     
     private fun loadProducts() {
+        showLoading(true)
         database.child("products").addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 productsList.clear()
@@ -97,16 +136,20 @@ class OrderActivity : AppCompatActivity() {
                     val product = productSnapshot.getValue(Product::class.java)
                     product?.let { productsList.add(it) }
                 }
+                
+                showLoading(false)
             }
             
             override fun onCancelled(error: DatabaseError) {
                 Toast.makeText(this@OrderActivity, "Error al cargar productos: ${error.message}", 
                     Toast.LENGTH_SHORT).show()
+                showLoading(false)
             }
         })
     }
     
     private fun loadOrders() {
+        showLoading(true)
         database.child("orders").addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 ordersList.clear()
@@ -130,11 +173,14 @@ class OrderActivity : AppCompatActivity() {
                     textEmptyOrders.visibility = View.GONE
                     recyclerOrders.visibility = View.VISIBLE
                 }
+                
+                showLoading(false)
             }
             
             override fun onCancelled(error: DatabaseError) {
                 Toast.makeText(this@OrderActivity, "Error al cargar pedidos: ${error.message}", 
                     Toast.LENGTH_SHORT).show()
+                showLoading(false)
             }
         })
     }
@@ -224,6 +270,8 @@ class OrderActivity : AppCompatActivity() {
         
         // Save order
         btnSaveOrder.setOnClickListener {
+            showLoading(true)
+            
             val customerName = etCustomerName.text.toString().trim()
             val phone = etPhone.text.toString().trim()
             val address = etAddress.text.toString().trim()
@@ -231,21 +279,25 @@ class OrderActivity : AppCompatActivity() {
             // Validate inputs
             if (customerName.isEmpty()) {
                 Toast.makeText(this, "Ingrese el nombre del cliente", Toast.LENGTH_SHORT).show()
+                showLoading(false)
                 return@setOnClickListener
             }
             
             if (phone.isEmpty()) {
                 Toast.makeText(this, "Ingrese el teléfono", Toast.LENGTH_SHORT).show()
+                showLoading(false)
                 return@setOnClickListener
             }
             
             if (address.isEmpty()) {
                 Toast.makeText(this, "Ingrese la dirección de entrega", Toast.LENGTH_SHORT).show()
+                showLoading(false)
                 return@setOnClickListener
             }
             
             if (orderProductAdapter.getOrderProducts().isEmpty()) {
                 Toast.makeText(this, "Agregue al menos un producto", Toast.LENGTH_SHORT).show()
+                showLoading(false)
                 return@setOnClickListener
             }
             
@@ -267,6 +319,7 @@ class OrderActivity : AppCompatActivity() {
             database.child("orders").child(orderId).setValue(order)
                 .addOnSuccessListener {
                     Toast.makeText(this, "Pedido guardado exitosamente", Toast.LENGTH_SHORT).show()
+                    showLoading(false)
                     dialog.dismiss()
                     
                     // Optionally update product inventory quantities
@@ -274,6 +327,7 @@ class OrderActivity : AppCompatActivity() {
                 }
                 .addOnFailureListener { e ->
                     Toast.makeText(this, "Error al guardar pedido: ${e.message}", Toast.LENGTH_SHORT).show()
+                    showLoading(false)
                 }
         }
         
@@ -344,22 +398,27 @@ class OrderActivity : AppCompatActivity() {
         
         // Add product to order
         btnAddToOrder.setOnClickListener {
+            showLoading(true)
+            
             val product = selectedProduct ?: return@setOnClickListener
             
             val quantityStr = etQuantity.text.toString().trim()
             if (quantityStr.isEmpty()) {
                 Toast.makeText(this, "Ingrese una cantidad", Toast.LENGTH_SHORT).show()
+                showLoading(false)
                 return@setOnClickListener
             }
             
             val quantity = quantityStr.toIntOrNull()
             if (quantity == null || quantity <= 0) {
                 Toast.makeText(this, "La cantidad debe ser un número positivo", Toast.LENGTH_SHORT).show()
+                showLoading(false)
                 return@setOnClickListener
             }
             
             if (quantity > product.quantity) {
                 Toast.makeText(this, "No hay suficiente inventario", Toast.LENGTH_SHORT).show()
+                showLoading(false)
                 return@setOnClickListener
             }
             
@@ -380,6 +439,7 @@ class OrderActivity : AppCompatActivity() {
                         if (newQuantity > product.quantity) {
                             Toast.makeText(this, "No hay suficiente inventario para la cantidad total", 
                                 Toast.LENGTH_SHORT).show()
+                            showLoading(false)
                             return@setPositiveButton
                         }
                         
@@ -400,9 +460,12 @@ class OrderActivity : AppCompatActivity() {
                         val format = NumberFormat.getCurrencyInstance(Locale("es", "MX"))
                         tvTotalAmount.text = "Total: ${format.format(totalAmount)}"
                         
+                        showLoading(false)
                         dialog.dismiss()
                     }
-                    .setNegativeButton("No", null)
+                    .setNegativeButton("No") { _, _ ->
+                        showLoading(false)
+                    }
                     .show()
             } else {
                 // Add new product to order
@@ -420,6 +483,7 @@ class OrderActivity : AppCompatActivity() {
                 val format = NumberFormat.getCurrencyInstance(Locale("es", "MX"))
                 tvTotalAmount.text = "Total: ${format.format(totalAmount)}"
                 
+                showLoading(false)
                 dialog.dismiss()
             }
         }
@@ -497,6 +561,7 @@ class OrderActivity : AppCompatActivity() {
         
         // Delete button
         btnDelete.setOnClickListener {
+            showLoading(true)
             confirmDeleteOrder(order, dialog)
         }
         
@@ -578,6 +643,8 @@ class OrderActivity : AppCompatActivity() {
         
         // Save order
         btnSaveOrder.setOnClickListener {
+            showLoading(true)
+            
             val customerName = etCustomerName.text.toString().trim()
             val phone = etPhone.text.toString().trim()
             val address = etAddress.text.toString().trim()
@@ -586,21 +653,25 @@ class OrderActivity : AppCompatActivity() {
             // Validate inputs
             if (customerName.isEmpty()) {
                 Toast.makeText(this, "Ingrese el nombre del cliente", Toast.LENGTH_SHORT).show()
+                showLoading(false)
                 return@setOnClickListener
             }
             
             if (phone.isEmpty()) {
                 Toast.makeText(this, "Ingrese el teléfono", Toast.LENGTH_SHORT).show()
+                showLoading(false)
                 return@setOnClickListener
             }
             
             if (address.isEmpty()) {
                 Toast.makeText(this, "Ingrese la dirección de entrega", Toast.LENGTH_SHORT).show()
+                showLoading(false)
                 return@setOnClickListener
             }
             
             if (orderProductAdapter.getOrderProducts().isEmpty()) {
                 Toast.makeText(this, "Agregue al menos un producto", Toast.LENGTH_SHORT).show()
+                showLoading(false)
                 return@setOnClickListener
             }
             
@@ -621,10 +692,12 @@ class OrderActivity : AppCompatActivity() {
             database.child("orders").child(order.id).setValue(updatedOrder)
                 .addOnSuccessListener {
                     Toast.makeText(this, "Pedido actualizado exitosamente", Toast.LENGTH_SHORT).show()
+                    showLoading(false)
                     dialog.dismiss()
                 }
                 .addOnFailureListener { e ->
                     Toast.makeText(this, "Error al actualizar pedido: ${e.message}", Toast.LENGTH_SHORT).show()
+                    showLoading(false)
                 }
         }
         
@@ -641,17 +714,22 @@ class OrderActivity : AppCompatActivity() {
                 deleteOrder(order)
                 parentDialog.dismiss()
             }
-            .setNegativeButton("Cancelar", null)
+            .setNegativeButton("Cancelar") { _, _ ->
+                showLoading(false)
+            }
             .show()
     }
     
     private fun deleteOrder(order: Order) {
+        showLoading(true)
         database.child("orders").child(order.id).removeValue()
             .addOnSuccessListener {
                 Toast.makeText(this, "Pedido eliminado exitosamente", Toast.LENGTH_SHORT).show()
+                showLoading(false)
             }
             .addOnFailureListener { e ->
                 Toast.makeText(this, "Error al eliminar pedido: ${e.message}", Toast.LENGTH_SHORT).show()
+                showLoading(false)
             }
     }
     

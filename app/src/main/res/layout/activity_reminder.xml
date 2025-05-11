@@ -5,7 +5,7 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".InventoryActivity">
+    tools:context=".ReminderActivity">
 
     <LinearLayout
         android:id="@+id/topBackground"
@@ -22,8 +22,7 @@
             android:text="Recordatorios"
             android:textStyle="bold"
             android:gravity="center|bottom"
-            android:paddingBottom="20dp"
-            />
+            android:paddingBottom="20dp" />
 
     </LinearLayout>
 
@@ -40,14 +39,75 @@
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:background="@drawable/top_start_activity"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:padding="16dp">
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="16dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Mis Recordatorios"
+                    android:textColor="@color/black"
+                    android:textSize="18sp"
+                    android:textStyle="bold"/>
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/btnAddReminder"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="+ Agregar"
+                    android:textAllCaps="false"
+                    android:textColor="@color/white"
+                    android:background="@drawable/add_button"/>
+            </LinearLayout>
+
+            <CalendarView
+                android:id="@+id/calendarView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@android:color/white"
+                android:layout_marginBottom="16dp"
+                android:selectedWeekBackgroundColor="@color/myPink"
+                android:focusedMonthDateColor="@color/myPink"
+                android:weekSeparatorLineColor="@color/myPurple"/>
+
+            <TextView
+                android:id="@+id/tvSelectedDate"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Recordatorios para hoy"
+                android:textColor="@color/black"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"/>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerReminders"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="8dp"
+                tools:listitem="@layout/item_reminder"/>
+
+            <TextView
+                android:id="@+id/tvEmptyReminders"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="No hay recordatorios para esta fecha"
+                android:textColor="@color/myHintColor"
+                android:textSize="16sp"
+                android:gravity="center"
+                android:layout_marginTop="32dp"
+                android:visibility="gone"/>
 
         </LinearLayout>
-
-
     </ScrollView>
 
     <LinearLayout
@@ -203,5 +263,29 @@
         </FrameLayout>
 
     </LinearLayout>
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:indeterminateTint="@color/myPink"
+        android:visibility="gone"
+        android:indeterminate="true"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"/>
+
+    <View
+        android:id="@+id/loadingBackground"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="#80000000"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

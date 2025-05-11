@@ -5,6 +5,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
+import android.media.Image
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
@@ -100,6 +101,24 @@ class InventoryActivity : AppCompatActivity() {
         val orderButton = findViewById<ImageButton>(R.id.orderButton)
         orderButton?.setOnClickListener {
             startActivity(Intent(this, OrderActivity::class.java))
+            finish()
+        }
+
+        val calulatorButton = findViewById<ImageButton>(R.id.calculatorButton)
+        calulatorButton?.setOnClickListener{
+            startActivity(Intent(this, CalculatorActivity::class.java))
+            finish()
+        }
+
+        val reminderButton = findViewById<ImageButton>(R.id.recordsButton)
+        reminderButton?.setOnClickListener{
+            startActivity(Intent(this, ReminderActivity::class.java))
+            finish()
+        }
+
+        val infoButton = findViewById<ImageButton>(R.id.infoButton)
+        infoButton?.setOnClickListener{
+            startActivity(Intent(this, InfoActivity::class.java))
             finish()
         }
         

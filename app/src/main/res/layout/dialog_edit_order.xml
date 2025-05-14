@@ -175,6 +175,7 @@
             android:layout_height="wrap_content"
             android:background="@drawable/rounded_button_purple"
             android:text="Guardar Cambios"
+            android:textAllCaps="false"
             android:textColor="@android:color/white"
             android:layout_marginVertical="8dp"/>
 

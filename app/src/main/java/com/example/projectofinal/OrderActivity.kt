@@ -9,6 +9,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.ProgressBar
+import android.widget.RadioGroup
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
@@ -40,9 +41,13 @@ class OrderActivity : AppCompatActivity() {
     
     private lateinit var orderAdapter: OrderAdapter
     private val ordersList = mutableListOf<Order>()
+    private val filteredOrdersList = mutableListOf<Order>() // Lista para pedidos filtrados
     
     private lateinit var progressBar: ProgressBar
     private lateinit var loadingBackground: View
+    
+    // Variable para rastrear si estamos en modo búsqueda
+    private var isSearchMode = false
     
     private val database = FirebaseDatabase.getInstance().reference
 
@@ -140,16 +145,21 @@ class OrderActivity : AppCompatActivity() {
                 // Ordenar por fecha descendente (más recientes primero)
                 ordersList.sortByDescending { it.orderDate }
                 
-                // Update adapter
-                orderAdapter.updateOrders(ordersList)
-                
-                // Show empty state if needed
-                if (ordersList.isEmpty()) {
-                    textEmptyOrders.visibility = View.VISIBLE
-                    recyclerOrders.visibility = View.GONE
+                // Si estamos en modo búsqueda, mantener los pedidos filtrados
+                if (isSearchMode) {
+                    // No actualizamos el adaptador ni cambiamos la visibilidad
                 } else {
-                    textEmptyOrders.visibility = View.GONE
-                    recyclerOrders.visibility = View.VISIBLE
+                    // En modo normal, mostrar todos los pedidos
+                    orderAdapter.updateOrders(ordersList)
+                    
+                    // Show empty state if needed
+                    if (ordersList.isEmpty()) {
+                        textEmptyOrders.visibility = View.VISIBLE
+                        recyclerOrders.visibility = View.GONE
+                    } else {
+                        textEmptyOrders.visibility = View.GONE
+                        recyclerOrders.visibility = View.VISIBLE
+                    }
                 }
                 
                 showLoading(false)
@@ -170,7 +180,7 @@ class OrderActivity : AppCompatActivity() {
         }
 
         buttonSearch.setOnClickListener {
-            Toast.makeText(this, "Funcionalidad de búsqueda en desarrollo", Toast.LENGTH_SHORT).show()
+            showSearchOrderDialog()
         }
 
         homeButton.setOnClickListener {
@@ -502,5 +512,144 @@ class OrderActivity : AppCompatActivity() {
                 Toast.makeText(this, "Error al eliminar pedido: ${e.message}", Toast.LENGTH_SHORT).show()
                 showLoading(false)
             }
+    }
+    
+    /**
+     * Muestra el diálogo de búsqueda de pedidos
+     */
+    private fun showSearchOrderDialog() {
+        val builder = AlertDialog.Builder(this, R.style.RoundedCornerDialog)
+        
+        val inflater = layoutInflater
+        val dialogLayout = inflater.inflate(R.layout.dialog_search_order, null)
+        builder.setView(dialogLayout)
+        
+        val dialog = builder.create()
+        
+        val etCustomerName = dialogLayout.findViewById<EditText>(R.id.etCustomerName)
+        val radioGroupStatus = dialogLayout.findViewById<RadioGroup>(R.id.radioGroupStatus)
+        val btnSearchOrder = dialogLayout.findViewById<Button>(R.id.btnSearchOrder)
+        val btnClose = dialogLayout.findViewById<ImageButton>(R.id.btnClose)
+        
+        // Configurar el botón de búsqueda
+        btnSearchOrder.setOnClickListener {
+            val customerName = etCustomerName.text.toString().trim()
+            
+            // Obtener el estado seleccionado
+            val selectedRadioButtonId = radioGroupStatus.checkedRadioButtonId
+            val status = when (selectedRadioButtonId) {
+                R.id.radioPending -> "Pendiente"
+                R.id.radioInProgress -> "En Proceso"
+                R.id.radioCompleted -> "Completado"
+                R.id.radioCancelled -> "Cancelado"
+                else -> "" // Todos
+            }
+            
+            // Realizar la búsqueda
+            searchOrders(customerName, status)
+            dialog.dismiss()
+        }
+        
+        // Configurar el botón de cierre
+        btnClose.setOnClickListener {
+            dialog.dismiss()
+        }
+        
+        dialog.show()
+        // Configurar ancho del diálogo
+        dialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+    }
+
+    private fun searchOrders(customerName: String, status: String) {
+        // Mostrar indicador de carga
+        showLoading(true)
+        
+        // Filtrar la lista de pedidos según los criterios
+        filteredOrdersList.clear()
+
+        val lowercaseCustomerName = customerName.lowercase()
+        
+        for (order in ordersList) {
+            // Verificar si coincide con el nombre del cliente (si se proporcionó)
+            val nameMatches = customerName.isEmpty() || 
+                              order.customerName.lowercase().contains(lowercaseCustomerName)
+            
+            // Verificar si coincide con el estado (si se proporcionó)
+            val statusMatches = status.isEmpty() || order.status == status
+            
+            // Si coincide con ambos criterios, añadir a la lista filtrada
+            if (nameMatches && statusMatches) {
+                filteredOrdersList.add(order)
+            }
+        }
+        
+        // Ordenar por fecha descendente (más recientes primero)
+        filteredOrdersList.sortByDescending { it.orderDate }
+        
+        // Actualizar el adaptador con los pedidos filtrados
+        orderAdapter.updateOrders(filteredOrdersList)
+        
+        // Actualizar estado de búsqueda
+        isSearchMode = true
+        
+        // Mostrar mensaje si no hay resultados
+        if (filteredOrdersList.isEmpty()) {
+            val statusText = if (status.isNotEmpty()) " con estado '$status'" else ""
+            val nameText = if (customerName.isNotEmpty()) " para cliente '$customerName'" else ""
+            val message = "No se encontraron pedidos${nameText}${statusText}"
+            
+            textEmptyOrders.text = message
+            textEmptyOrders.visibility = View.VISIBLE
+            recyclerOrders.visibility = View.GONE
+            
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        } else {
+            textEmptyOrders.visibility = View.GONE
+            recyclerOrders.visibility = View.VISIBLE
+            
+            val statusText = if (status.isNotEmpty()) " con estado '$status'" else ""
+            val nameText = if (customerName.isNotEmpty()) " para cliente '$customerName'" else ""
+            val message = "${filteredOrdersList.size} pedidos encontrados${nameText}${statusText}"
+            
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        }
+        
+        // Añadir un botón para volver a todos los pedidos
+        buttonAdd.text = "Mostrar Todos"
+        buttonAdd.setOnClickListener {
+            resetSearch()
+        }
+        
+        // Ocultar indicador de carga
+        showLoading(false)
+    }
+    
+    /**
+     * Restablece la búsqueda y muestra todos los pedidos
+     */
+    private fun resetSearch() {
+        // Restablecer el modo de búsqueda
+        isSearchMode = false
+        
+        // Mostrar todos los pedidos
+        orderAdapter.updateOrders(ordersList)
+        
+        // Actualizar la visibilidad según si hay pedidos
+        if (ordersList.isEmpty()) {
+            textEmptyOrders.text = "No hay pedidos disponibles"
+            textEmptyOrders.visibility = View.VISIBLE
+            recyclerOrders.visibility = View.GONE
+        } else {
+            textEmptyOrders.visibility = View.GONE
+            recyclerOrders.visibility = View.VISIBLE
+        }
+        
+        // Restablecer el texto y listener del botón de agregar
+        buttonAdd.text = "Agregar +"
+        buttonAdd.setOnClickListener {
+            showAddOrderDialog()
+        }
+        
+        Toast.makeText(this, "Mostrando todos los pedidos", Toast.LENGTH_SHORT).show()
     }
 }

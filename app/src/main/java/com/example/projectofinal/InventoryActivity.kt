@@ -39,10 +39,12 @@ import com.bumptech.glide.request.transition.Transition
 class InventoryActivity : AppCompatActivity() {
 
     private lateinit var buttonAdd: Button
+    private lateinit var buttonSearch: Button
     private lateinit var recyclerProducts: RecyclerView
     private lateinit var textEmptyProducts: TextView
     private lateinit var productAdapter: ProductAdapter
     private val productsList = mutableListOf<Product>()
+    private val filteredProductsList = mutableListOf<Product>() // Lista para productos filtrados
     private var selectedImageUri: Uri? = null
     private var currentImageButton: Button? = null  // Referencia al botón de imagen actual
     private val storageRef = FirebaseStorage.getInstance().reference
@@ -50,6 +52,9 @@ class InventoryActivity : AppCompatActivity() {
     
     private lateinit var progressBar: ProgressBar
     private lateinit var loadingBackground: View
+    
+    // Variable para rastrear si estamos en modo búsqueda
+    private var isSearchMode = false
     
     // Activity result launcher for image selection
     private val getContent = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -87,6 +92,7 @@ class InventoryActivity : AppCompatActivity() {
         setContentView(R.layout.activity_inventory)
 
         buttonAdd = findViewById(R.id.buttonAdd)
+        buttonSearch = findViewById(R.id.buttonSearch)
         recyclerProducts = findViewById(R.id.recyclerProducts)
         textEmptyProducts = findViewById(R.id.textEmptyProducts)
         
@@ -127,6 +133,11 @@ class InventoryActivity : AppCompatActivity() {
         
         // Load products from Firebase
         loadProducts()
+        
+        // Configurar el botón de búsqueda
+        buttonSearch.setOnClickListener {
+            showSearchDialog()
+        }
 
         buttonAdd.setOnClickListener{
             val builder = AlertDialog.Builder(this, R.style.RoundedCornerDialog)
@@ -266,16 +277,21 @@ class InventoryActivity : AppCompatActivity() {
                     product?.let { productsList.add(it) }
                 }
                 
-                // actualizar adapter
-                productAdapter.updateProducts(productsList)
-                
-                // Show empty state if needed
-                if (productsList.isEmpty()) {
-                    textEmptyProducts.visibility = View.VISIBLE
-                    recyclerProducts.visibility = View.GONE
+                // Si estamos en modo búsqueda, mantener los productos filtrados
+                if (isSearchMode) {
+                    // No actualizamos el adaptador ni cambiamos la visibilidad
                 } else {
-                    textEmptyProducts.visibility = View.GONE
-                    recyclerProducts.visibility = View.VISIBLE
+                    // En modo normal, mostrar todos los productos
+                    productAdapter.updateProducts(productsList)
+                    
+                    // Show empty state if needed
+                    if (productsList.isEmpty()) {
+                        textEmptyProducts.visibility = View.VISIBLE
+                        recyclerProducts.visibility = View.GONE
+                    } else {
+                        textEmptyProducts.visibility = View.GONE
+                        recyclerProducts.visibility = View.VISIBLE
+                    }
                 }
                 
                 // Ocultar indicador de carga
@@ -551,5 +567,191 @@ class InventoryActivity : AppCompatActivity() {
                 Toast.makeText(this, "Error al eliminar producto: ${e.message}", Toast.LENGTH_SHORT).show()
                 showLoading(false)
             }
+    }
+    
+    /**
+     * Muestra el diálogo de búsqueda de productos
+     */
+    private fun showSearchDialog() {
+        val builder = AlertDialog.Builder(this, R.style.RoundedCornerDialog)
+        
+        val inflater = layoutInflater
+        val dialogLayout = inflater.inflate(R.layout.dialog_search_product, null)
+        builder.setView(dialogLayout)
+        
+        val dialog = builder.create()
+        
+        val etProductName = dialogLayout.findViewById<EditText>(R.id.etProductName)
+        val btnSearchProduct = dialogLayout.findViewById<Button>(R.id.btnSearchProduct)
+        val btnClose = dialogLayout.findViewById<ImageButton>(R.id.btnClose)
+        
+        // Configurar el botón de búsqueda
+        btnSearchProduct.setOnClickListener {
+            val searchQuery = etProductName.text.toString().trim()
+            
+            if (searchQuery.isEmpty()) {
+                Toast.makeText(this, "Ingrese un nombre para buscar", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            
+            // Realizar la búsqueda
+            searchProducts(searchQuery)
+            dialog.dismiss()
+        }
+        
+        // Configurar el botón de cierre
+        btnClose.setOnClickListener {
+            dialog.dismiss()
+        }
+        
+        dialog.show()
+        // Configurar ancho del diálogo
+        dialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+    }
+    
+    /**
+     * Busca productos que coincidan con la consulta
+     * @param query El texto a buscar en los nombres de productos
+     */
+    private fun searchProducts(query: String) {
+        // Mostrar indicador de carga
+        showLoading(true)
+        
+        // Filtrar la lista de productos según la consulta
+        filteredProductsList.clear()
+        
+        // Pasar a minúsculas para una comparación sin distinción entre mayúsculas y minúsculas
+        val lowercaseQuery = query.lowercase()
+        
+        for (product in productsList) {
+            if (product.name.lowercase().contains(lowercaseQuery)) {
+                filteredProductsList.add(product)
+            }
+        }
+        
+        // Actualizar el adaptador con los productos filtrados
+        productAdapter.updateProducts(filteredProductsList)
+        
+        // Actualizar estado de búsqueda
+        isSearchMode = true
+        
+        // Mostrar mensaje si no hay resultados
+        if (filteredProductsList.isEmpty()) {
+            textEmptyProducts.text = "No se encontraron productos que coincidan con '$query'"
+            textEmptyProducts.visibility = View.VISIBLE
+            recyclerProducts.visibility = View.GONE
+            
+            // Añadir un botón para volver a todos los productos
+            Toast.makeText(this, "No se encontraron productos que coincidan con '$query'", Toast.LENGTH_SHORT).show()
+        } else {
+            textEmptyProducts.visibility = View.GONE
+            recyclerProducts.visibility = View.VISIBLE
+            
+            Toast.makeText(this, "${filteredProductsList.size} productos encontrados", Toast.LENGTH_SHORT).show()
+        }
+        
+        // Añadir un botón para volver a todos los productos
+        buttonAdd.text = "Mostrar Todos"
+        buttonAdd.setOnClickListener {
+            resetSearch()
+        }
+        
+        // Ocultar indicador de carga
+        showLoading(false)
+    }
+    
+    /**
+     * Restablece la búsqueda y muestra todos los productos
+     */
+    private fun resetSearch() {
+        // Restablecer el modo de búsqueda
+        isSearchMode = false
+        
+        // Mostrar todos los productos
+        productAdapter.updateProducts(productsList)
+        
+        // Actualizar la visibilidad según si hay productos
+        if (productsList.isEmpty()) {
+            textEmptyProducts.text = "No hay productos en inventario"
+            textEmptyProducts.visibility = View.VISIBLE
+            recyclerProducts.visibility = View.GONE
+        } else {
+            textEmptyProducts.visibility = View.GONE
+            recyclerProducts.visibility = View.VISIBLE
+        }
+        
+        // Restablecer el texto y listener del botón de agregar
+        buttonAdd.text = "Agregar +"
+        buttonAdd.setOnClickListener {
+            val builder = AlertDialog.Builder(this, R.style.RoundedCornerDialog)
+
+            val inflater = layoutInflater
+            val dialogLayout = inflater.inflate(R.layout.dialog_add_inventory, null)
+            builder.setView(dialogLayout)
+
+            val dialog = builder.create()
+            
+            val btnAddImage = dialogLayout.findViewById<Button>(R.id.addImage)
+            val etProductName = dialogLayout.findViewById<EditText>(R.id.etAddProduct)
+            val etQuantity = dialogLayout.findViewById<EditText>(R.id.etAddNum)
+            val etPrice = dialogLayout.findViewById<EditText>(R.id.etAddPrice)
+            val btnAddProduct = dialogLayout.findViewById<Button>(R.id.buttonAddProduct)
+            val btnClose = dialogLayout.findViewById<Button>(R.id.cancelButton)
+            
+            // manejo de imagenes
+            btnAddImage.setOnClickListener {
+                currentImageButton = btnAddImage  // Guardar referencia al botón actual
+                val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+                getContent.launch(intent)
+            }
+            
+            // manejo agregación  productos
+            btnAddProduct.setOnClickListener {
+                // Mostrar carga
+                showLoading(true)
+                val name = etProductName.text.toString().trim()
+                val quantityStr = etQuantity.text.toString().trim()
+                val priceStr = etPrice.text.toString().trim()
+                
+                // validaciones
+                if (name.isEmpty() || quantityStr.isEmpty() || priceStr.isEmpty()) {
+                    Toast.makeText(this, "Por favor complete todos los campos", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+                
+                val quantity = quantityStr.toIntOrNull()
+                if (quantity == null || quantity <= 0) {
+                    Toast.makeText(this, "La cantidad debe ser un número positivo", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+                
+                val price = priceStr.toDoubleOrNull()
+                if (price == null || price <= 0) {
+                    Toast.makeText(this, "El precio debe ser un número positivo", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+                
+                // Upload image first if selected, then add product data
+                if (selectedImageUri != null) {
+                    uploadImageAndAddProduct(name, quantity, price, dialog)
+                } else {
+                    // Add product without image
+                    addProductToDatabase(name, quantity, price, "", dialog)
+                }
+            }
+
+            btnClose.setOnClickListener{
+                currentImageButton = null  // Limpiar la referencia al botón
+                dialog.dismiss()
+            }
+
+            dialog.show()
+        // Configurar ancho del diálogo
+        dialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            // Configurar ancho del diálogo
+            dialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
+        
+        Toast.makeText(this, "Mostrando todos los productos", Toast.LENGTH_SHORT).show()
     }
 }

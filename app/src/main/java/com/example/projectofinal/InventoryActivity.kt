@@ -608,11 +608,7 @@ class InventoryActivity : AppCompatActivity() {
         // Configurar ancho del diálogo
         dialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
     }
-    
-    /**
-     * Busca productos que coincidan con la consulta
-     * @param query El texto a buscar en los nombres de productos
-     */
+
     private fun searchProducts(query: String) {
         // Mostrar indicador de carga
         showLoading(true)
@@ -651,7 +647,7 @@ class InventoryActivity : AppCompatActivity() {
         }
         
         // Añadir un botón para volver a todos los productos
-        buttonAdd.text = "Mostrar Todos"
+        buttonAdd.text = "Todos"
         buttonAdd.setOnClickListener {
             resetSearch()
         }
@@ -659,10 +655,7 @@ class InventoryActivity : AppCompatActivity() {
         // Ocultar indicador de carga
         showLoading(false)
     }
-    
-    /**
-     * Restablece la búsqueda y muestra todos los productos
-     */
+
     private fun resetSearch() {
         // Restablecer el modo de búsqueda
         isSearchMode = false

@@ -615,7 +615,7 @@ class OrderActivity : AppCompatActivity() {
         }
         
         // Añadir un botón para volver a todos los pedidos
-        buttonAdd.text = "Mostrar Todos"
+        buttonAdd.text = "Todos"
         buttonAdd.setOnClickListener {
             resetSearch()
         }

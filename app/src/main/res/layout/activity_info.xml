@@ -42,13 +42,13 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:background="@drawable/top_start_activity"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:padding="16dp">
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textColor="@color/black"
-                android:padding="16dp"
                 android:textSize="16sp"
                 android:text="¿Quién es?\n
 Maria Teresa Ochoa es una apasionada artesana con más de ... años de experiencia en el tejido y bordado a mano. Con dedicación, creatividad y amor por los detalles, ha logrado convertir su pasión en un emprendimiento que inspira.\n\n
@@ -59,6 +59,17 @@ Logros\n
 Desarrolladores\n
 Esta aplicación fue creada por estudiantes comprometidos con visibilizar el talento local y apoyar los sueños de los emprendedores. ¡Gracias por usar nuestra app!"
                 />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/buttonProfile"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="32dp"
+                android:background="@drawable/rounded_button_purple"
+                android:text="Mi perfil"
+                android:textAllCaps="false"
+                android:textColor="@color/white"
+                android:textSize="16sp" />
 
 
 

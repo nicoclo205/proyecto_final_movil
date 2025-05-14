@@ -2,12 +2,15 @@ package com.example.projectofinal
 
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Button
 import android.widget.ImageButton
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.google.firebase.auth.FirebaseAuth
 
 class InfoActivity : AppCompatActivity() {
 
@@ -15,6 +18,7 @@ class InfoActivity : AppCompatActivity() {
     lateinit var orderButton: ImageButton
     lateinit var calculatorButton: ImageButton
     lateinit var reminderButton: ImageButton
+    lateinit var buttonProfile: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -24,6 +28,7 @@ class InfoActivity : AppCompatActivity() {
         orderButton = findViewById(R.id.orderButton)
         calculatorButton = findViewById(R.id.calculatorButton)
         reminderButton = findViewById(R.id.recordsButton)
+        buttonProfile = findViewById(R.id.buttonProfile)
 
 
         setupButtonListeners()
@@ -50,6 +55,11 @@ class InfoActivity : AppCompatActivity() {
         reminderButton.setOnClickListener {
             startActivity(Intent(this, ReminderActivity::class.java))
             finish()
+        }
+        
+        buttonProfile.setOnClickListener {
+            // Navegar a la actividad de perfil
+            startActivity(Intent(this, ProfileActivity::class.java))
         }
 
     }

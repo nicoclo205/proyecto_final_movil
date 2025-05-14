@@ -98,12 +98,11 @@ class InventoryActivity : AppCompatActivity() {
         
         progressBar = findViewById(R.id.progressBar)
         loadingBackground = findViewById(R.id.loadingBackground)
-        
-        // Asegurar que la carga inicie de forma oculta
+
         progressBar.visibility = View.GONE
         loadingBackground.visibility = View.GONE
         
-        // Setup navigation buttons if they exist
+       // Organizando las funciones de los botones
         val orderButton = findViewById<ImageButton>(R.id.orderButton)
         orderButton?.setOnClickListener {
             startActivity(Intent(this, OrderActivity::class.java))
@@ -362,8 +361,8 @@ class InventoryActivity : AppCompatActivity() {
         val etProductName = dialogLayout.findViewById<EditText>(R.id.etEditProduct)
         val etQuantity = dialogLayout.findViewById<EditText>(R.id.etEditNum)
         val etPrice = dialogLayout.findViewById<EditText>(R.id.etEditPrice)
-        val btnUpdateProduct = dialogLayout.findViewById<Button>(R.id.editButton)  // Cambio a ImageButton
-        val btnDeleteProduct = dialogLayout.findViewById<Button>(R.id.deleteButton)  // Cambio a ImageButton
+        val btnUpdateProduct = dialogLayout.findViewById<Button>(R.id.editButton)
+        val btnDeleteProduct = dialogLayout.findViewById<Button>(R.id.deleteButton)
         val btnClose = dialogLayout.findViewById<Button>(R.id.cancelButton)
         
         // Fill the form with product data
@@ -371,10 +370,9 @@ class InventoryActivity : AppCompatActivity() {
         etQuantity.setText(product.quantity.toString())
         etPrice.setText(product.price.toString())
         
-        // Load product image if available
+        // cargar la imagen del producto si existe
         if (product.imageUrl.isNotEmpty()) {
             try {
-                // Usar Glide
                 Glide.with(this)
                     .asBitmap()
                     .load(product.imageUrl)

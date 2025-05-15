@@ -62,7 +62,14 @@ class ProfileActivity : AppCompatActivity() {
         if (result.resultCode == RESULT_OK) {
             result.data?.data?.let { uri ->
                 selectedImageUri = uri
+                
+                // Hacer visible la imagen inmediatamente y ocultar el botón
+                imgProfile.visibility = View.VISIBLE
+                btnChangePhoto.visibility = View.GONE
+                
+                // Establecer la imagen seleccionada en el ImageView
                 imgProfile.setImageURI(uri)
+                
                 // Subir la imagen inmediatamente
                 uploadProfileImage()
             }
@@ -101,6 +108,13 @@ class ProfileActivity : AppCompatActivity() {
         super.onResume()
         
         // Actualizar visibilidad y contenido
+        updatePhotoVisibility()
+    }
+    
+    /**
+     * Actualiza la visibilidad del botón e imagen según si existe foto de perfil
+     */
+    private fun updatePhotoVisibility() {
         if (userPhotoUrl.isEmpty()) {
             // Si no hay foto, mostrar botón y ocultar imagen
             imgProfile.visibility = View.GONE
@@ -110,6 +124,12 @@ class ProfileActivity : AppCompatActivity() {
             // Si hay foto, mostrar imagen y ocultar botón
             imgProfile.visibility = View.VISIBLE
             btnChangePhoto.visibility = View.GONE
+            
+            // Cargar la imagen con Glide
+            Glide.with(this)
+                .load(userPhotoUrl)
+                .circleCrop()
+                .into(imgProfile)
         }
     }
 
@@ -171,25 +191,8 @@ class ProfileActivity : AppCompatActivity() {
         tvPhone.text = "Teléfono: $userPhone"
         tvEmail.text = "Email: $userEmail"
         
-        // Cargar foto de perfil si existe
-        if (userPhotoUrl.isNotEmpty()) {
-            // Mostrar la imagen y ocultar el botón
-            imgProfile.visibility = View.VISIBLE
-            btnChangePhoto.visibility = View.GONE
-            
-            // Cargar la imagen con Glide
-            Glide.with(this)
-                .load(userPhotoUrl)
-                .circleCrop()
-                .into(imgProfile)
-        } else {
-            // Mostrar el botón y ocultar la imagen
-            imgProfile.visibility = View.GONE
-            btnChangePhoto.visibility = View.VISIBLE
-            
-            // Asegurarse de que no haya imagen si no hay URL
-            imgProfile.setImageDrawable(null)
-        }
+        // Actualizar visibilidad de foto de perfil
+        updatePhotoVisibility()
     }
 
     private fun setupButtonListeners() {
@@ -336,10 +339,6 @@ class ProfileActivity : AppCompatActivity() {
         val imageRef = storageRef.child("profile_images/$userId.jpg")
         
         selectedImageUri?.let { uri ->
-            // Mostrar la imagen y ocultar el botón inmediatamente
-            imgProfile.visibility = View.VISIBLE
-            btnChangePhoto.visibility = View.GONE
-            
             imageRef.putFile(uri)
                 .addOnSuccessListener {
                     // Obtener URL de descarga
@@ -355,7 +354,7 @@ class ProfileActivity : AppCompatActivity() {
                         Toast.LENGTH_SHORT
                     ).show()
                     
-                    // En caso de error, volver a mostrar el botón
+                    // En caso de error, revertir la visibilidad si no había foto previa
                     if (userPhotoUrl.isEmpty()) {
                         imgProfile.visibility = View.GONE
                         btnChangePhoto.visibility = View.VISIBLE
@@ -379,11 +378,18 @@ class ProfileActivity : AppCompatActivity() {
         database.getReference("users").child(userId).updateChildren(updates)
             .addOnSuccessListener {
                 userPhotoUrl = photoUrl
+                
+                // Asegurar que la visibilidad es correcta
+                runOnUiThread {
+                    updatePhotoVisibility()
+                }
+                
                 Toast.makeText(
                     this,
                     "Foto de perfil actualizada",
                     Toast.LENGTH_SHORT
                 ).show()
+                
                 showLoading(false)
             }
             .addOnFailureListener { e ->
@@ -392,6 +398,7 @@ class ProfileActivity : AppCompatActivity() {
                     "Error al actualizar foto: ${e.message}",
                     Toast.LENGTH_SHORT
                 ).show()
+                
                 showLoading(false)
             }
     }

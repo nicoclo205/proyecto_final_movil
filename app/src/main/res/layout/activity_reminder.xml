@@ -61,8 +61,8 @@
 
                 <androidx.appcompat.widget.AppCompatButton
                     android:id="@+id/btnAddReminder"
-                    android:layout_width="wrap_content"
-                    android:layout_height="30dp"
+                    android:layout_width="100dp"
+                    android:layout_height="32dp"
                     android:text="Agregar +"
                     android:textAllCaps="false"
                     android:textColor="@color/white"
